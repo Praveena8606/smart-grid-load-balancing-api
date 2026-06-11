@@ -4,4 +4,4 @@ app = FastAPI()
 
 @app.get("/")
 def home():
-    return {"message": "Smart Grid Load Balancing API"}
+    return {"message": "Smart Grid Load Balancing API is running"}
