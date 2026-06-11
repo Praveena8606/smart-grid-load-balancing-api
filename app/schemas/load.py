@@ -1,6 +1,6 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 class LoadData(BaseModel):
-    area: str
-    current_load: float
-    max_capacity: float
+    area: str = Field(..., min_length=2)
+    current_load: float = Field(..., gt=0)
+    max_capacity: float = Field(..., gt=0)
