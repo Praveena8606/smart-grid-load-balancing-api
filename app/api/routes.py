@@ -158,3 +158,27 @@ def get_prediction(db: Session = Depends(get_db)):
         })
 
     return predictions
+
+@router.get("/recommendations")
+def get_recommendations(db: Session = Depends(get_db)):
+    loads = db.query(Load).all()
+
+    recommendations = []
+
+    for load in loads:
+        usage_percent = (load.current_load / load.max_capacity) * 100
+
+        if usage_percent > 90:
+            action = "Reduce load immediately"
+        elif usage_percent > 70:
+            action = "Monitor closely"
+        else:
+            action = "Normal operation"
+
+        recommendations.append({
+            "area": load.area,
+            "usage_percent": round(usage_percent, 2),
+            "recommendation": action
+        })
+
+    return recommendations

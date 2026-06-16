@@ -1,46 +1,69 @@
 # Smart Grid Load Balancing API
 
-A FastAPI-based backend service for smart grid load management.
+A FastAPI-based backend system for monitoring electricity load distribution across grid sectors.
 
 ## Features
 
-* FastAPI REST API
-* Health Check Endpoint
-* Load Data Endpoint
-* Request Validation with Pydantic
-* Docker Support
-* Swagger API Documentation
+* Load Management
+* Overload Detection
+* Dashboard Analytics
+* Grid Health Monitoring
+* Load Prediction
+* Smart Recommendations
+
+## Tech Stack
+
+* Python
+* FastAPI
+* SQLAlchemy
+* SQLite
+* Uvicorn
+* GitHub
 
 ## Installation
+
+Clone the repository:
+
+```bash
+git clone https://github.com/Praveena8606/smart-grid-load-balancing-api.git
+```
+
+Install dependencies:
 
 ```bash
 pip install -r requirements.txt
 ```
 
-## Run Locally
+Run the application:
 
 ```bash
 uvicorn app.main:app --reload
 ```
 
-## API Documentation
-
-Open in your browser:
+Open Swagger UI:
 
 ```text
 http://127.0.0.1:8000/docs
 ```
 
-## Docker
+## Available APIs
 
-Build image:
+* GET /health
+* POST /load
+* GET /loads
+* GET /alerts
+* GET /dashboard
+* GET /grid-status
+* GET /prediction
+* GET /recommendations
 
-```bash
-docker build -t smart-grid-api .
-```
+## Future Enhancements
 
-Run container:
+* Machine Learning Load Forecasting
+* React Dashboard
+* Cloud Deployment
+* Real-time Monitoring
 
-```bash
-docker run -p 8000:8000 smart-grid-api
-```
+## Author
+
+Praveena Prakash
