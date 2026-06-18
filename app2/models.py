@@ -60,3 +60,22 @@ class AlertTable(Base):
     alert_message = Column(String(255))
 
     alert_time = Column(DateTime(timezone=True))
+
+
+
+class ForecastAlertTable(Base):
+
+    __tablename__ = "forecast_alert_table"
+
+    id = Column(Integer, primary_key=True, index=True)
+
+    zone_id = Column(String)
+
+    forecast_time = Column(DateTime)
+
+    predicted_power_kw = Column(Float)
+
+    alert_message = Column(String)
+
+    created_time = Column(DateTime)
+
