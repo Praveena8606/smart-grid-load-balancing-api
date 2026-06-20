@@ -79,3 +79,41 @@ class ForecastAlertTable(Base):
 
     created_time = Column(DateTime)
 
+
+
+class ForecastAnalytics(Base):
+
+    __tablename__ = "forecast_analytics"
+
+    id = Column(Integer, primary_key=True)
+
+    zone_id = Column(String)
+
+    avg_forecast_power = Column(Float)
+
+    max_forecast_power = Column(Float)
+
+    min_forecast_power = Column(Float)
+
+    house_count = Column(Integer)
+
+    total_capacity = Column(Float)
+
+    forecast_utilization_percent = Column(Float)
+
+    calculated_time = Column(DateTime(timezone=True))
+
+
+class ZoneForecast(Base):
+
+    __tablename__ = "zone_forecast"
+
+    id = Column(Integer, primary_key=True)
+
+    zone_id = Column(String(50))
+
+    forecast_time = Column(DateTime)
+
+    predicted_power_kw = Column(Float)
+
+    created_time = Column(DateTime)
