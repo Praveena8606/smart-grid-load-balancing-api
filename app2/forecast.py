@@ -5,13 +5,16 @@ from sqlalchemy import text, create_engine
 from datetime import datetime
 
 from app.database import SessionLocal
+from app.models import ForecastAlertTable
 
 engine = create_engine(
-    "postgresql://postgres:12345@localhost:5434/tsdb"
+    "postgresql://postgres:12345@localhost:5433/tsdb"
 )
 
 
 def run_forecast():
+
+    print("FORECAST TASK RUNNING...")
 
     db = SessionLocal()
 
@@ -37,7 +40,9 @@ def run_forecast():
 
         df = pd.read_sql(query, engine)
 
+        # Prophet needs enough data
         if len(df) < 20:
+            print(f"Skipping {zone_id} - not enough data")
             continue
 
         df = df.rename(
@@ -56,42 +61,67 @@ def run_forecast():
         model.fit(df)
 
         future = model.make_future_dataframe(
-            periods=12,
+            periods=1,
             freq="5min"
         )
 
         forecast = model.predict(future)
 
-        for row in forecast.tail(12).itertuples():
+        row = forecast.tail(1).iloc[0]
 
-            db.execute(
-                text("""
-                INSERT INTO zone_forecast
-                (
-                    zone_id,
-                    forecast_time,
-                    predicted_power_kw,
-                    created_time
-                )
-                VALUES
-                (
-                    :zone_id,
-                    :forecast_time,
-                    :predicted_power,
-                    :created_time
-                )
-                """),
-                {
-                    "zone_id": zone_id,
-                    "forecast_time": row.ds,
-                    "predicted_power": float(row.yhat),
-                    "created_time": datetime.utcnow()
-                }
+        predicted_power = float(row["yhat"])
+
+        # Store forecast
+        db.execute(
+            text("""
+            INSERT INTO zone_forecast
+            (
+                zone_id,
+                forecast_time,
+                predicted_power_kw,
+                created_time
             )
+            VALUES
+            (
+                :zone_id,
+                :forecast_time,
+                :predicted_power,
+                :created_time
+            )
+            """),
+            {
+                "zone_id": zone_id,
+                "forecast_time": row["ds"],
+                "predicted_power": predicted_power,
+                "created_time": datetime.utcnow()
+            }
+        )
+
+        # Forecast Alert
+        if predicted_power > 135:
+
+            db.add(
+                ForecastAlertTable(
+                    zone_id=zone_id,
+                    forecast_time=row["ds"],
+                    predicted_power_kw=predicted_power,
+                    alert_message="Forecasted Power Above Threshold",
+                    created_time=datetime.utcnow()
+                )
+            )
+
+            print(
+                f"FORECAST ALERT -> {zone_id} | "
+                f"Predicted Power = {predicted_power}"
+            )
+
+        print(
+            f"{zone_id} Forecast = "
+            f"{round(predicted_power, 2)} kW"
+        )
 
     db.commit()
     db.close()
 
     print("FORECAST COMPLETED")
-
 

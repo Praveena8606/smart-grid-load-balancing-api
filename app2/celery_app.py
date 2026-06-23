@@ -2,10 +2,9 @@ from celery import Celery
 
 celery = Celery(
     "grid_tasks",
-    broker="redis://redis:6379/0",
-    backend="redis://redis:6379/0"
+    broker="redis://localhost:6379/0",
+    backend="redis://localhost:6379/0"
 )
-
 
 celery.conf.timezone = "UTC"
 
@@ -23,7 +22,19 @@ celery.conf.beat_schedule = {
 
     "generate-forecast": {
         "task": "app.tasks.generate_forecast",
-        "schedule": 60.0
-    }
+        "schedule": 10.0
+    },
+
+    "forecast-analytics": {
+        "task": "app.tasks.calculate_forecast_analytics",
+        "schedule": 10.0
+    },
+
+    "forecast-alert": {
+        "task": "app.tasks.check_forecast_alerts",
+        "schedule": 10.0
 
 }
+}
+
+
