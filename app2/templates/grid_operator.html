@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+    <title>Grid Operator Dashboard</title>
+
+    <link rel="stylesheet" href="/static/css/dashboard.css">
+
+    <style>
+
+        #connectionStatus{
+            display:inline-block;
+            padding:8px 15px;
+            border-radius:6px;
+            color:white;
+            background:red;
+            margin-bottom:20px;
+            font-weight:bold;
+        }
+
+        .alert-card{
+            background:#ff4d4d;
+            color:white;
+            padding:15px;
+            margin-bottom:10px;
+            border-radius:8px;
+            font-size:17px;
+            font-weight:bold;
+        }
+
+        .zone-alert{
+            background:#ffe0e0 !important;
+            font-weight:bold;
+        }
+
+    </style>
+
+</head>
+
+<body>
+
+<div class="container">
+
+    <h1>GRID OPERATOR DASHBOARD</h1>
+
+    <div id="connectionStatus">
+        Connecting...
+    </div>
+
+    <br><br>
+
+    <div id="alertBox"></div>
+
+    <h2>Latest Grid Load Data</h2>
+
+    <table>
+
+        <thead>
+
+        <tr>
+
+            <th>Zone</th>
+            <th>House</th>
+            <th>Power (kW)</th>
+            <th>Voltage (V)</th>
+            <th>Current (A)</th>
+            <th>Recorded Time</th>
+
+        </tr>
+
+        </thead>
+
+        <tbody>
+
+        {% for row in loads %}
+
+        <tr>
+
+            <td>{{ row.zone_id }}</td>
+            <td>{{ row.house_id }}</td>
+            <td>{{ row.total_power_kw }}</td>
+            <td>{{ row.avg_voltage }}</td>
+            <td>{{ row.avg_current }}</td>
+            <td>{{ row.record_time }}</td>
+
+        </tr>
+
+        {% endfor %}
+
+        </tbody>
+
+    </table>
+
+    <br><br>
+
+    <h2>Current Zone Analytics</h2>
+
+    <table>
+
+        <thead>
+
+        <tr>
+
+            <th>Zone</th>
+            <th>Average Power</th>
+            <th>Average Voltage</th>
+            <th>Average Current</th>
+            <th>House Count</th>
+            <th>Total Capacity</th>
+            <th>Utilization %</th>
+            <th>Calculated Time</th>
+
+        </tr>
+
+        </thead>
+
+        <tbody>
+
+        {% for row in analytics %}
+
+        <tr id="{{ row.zone_id }}">
+
+            <td>{{ row.zone_id }}</td>
+
+            <td>{{ "%.2f"|format(row.avg_power_kw) }}</td>
+
+            <td>{{ "%.2f"|format(row.avg_voltage) }}</td>
+
+            <td>{{ "%.2f"|format(row.avg_current) }}</td>
+
+            <td>{{ row.house_count }}</td>
+
+            <td>{{ row.total_current_capacity }}</td>
+
+            <td>{{ "%.2f"|format(row.utilization_percent) }}%</td>
+
+            <td>
+
+                {{ row.calculated_time.strftime("%d-%m-%Y %H:%M:%S") if row.calculated_time else "-" }}
+
+            </td>
+
+        </tr>
+
+        {% endfor %}
+
+        </tbody>
+
+    </table>
+
+    <br>
+
+    <button onclick="window.location.href='/dashboard/'">
+
+        ← Back Dashboard
+
+    </button>
+
+</div>
+
+<script>
+
+function connectSocket(){
+
+    const socket = new WebSocket("ws://127.0.0.1:8000/ws/grid");
+
+    const status = document.getElementById("connectionStatus");
+    const alertBox = document.getElementById("alertBox");
+
+    // ===============================
+    // Connected
+    // ===============================
+
+    socket.onopen = function(){
+
+        console.log("GRID Connected");
+
+        status.innerHTML = "Connected";
+        status.style.background = "green";
+
+    };
+
+
+    // ===============================
+    // Receive Message
+    // ===============================
+
+    socket.onmessage = function(event){
+
+        const data = JSON.parse(event.data);
+
+        console.log(data);
+
+        // ======================================
+        // LIVE TABLE UPDATE
+        // ======================================
+
+        if(data.type === "grid_update"){
+
+            const row = document.getElementById(data.zone_id);
+
+            if(row){
+
+                row.cells[1].innerHTML =
+                    Number(data.avg_power_kw).toFixed(2);
+
+                row.cells[2].innerHTML =
+                    Number(data.avg_voltage).toFixed(2);
+
+                row.cells[3].innerHTML =
+                    Number(data.avg_current).toFixed(2);
+
+                row.cells[4].innerHTML =
+                    data.house_count;
+
+                row.cells[5].innerHTML =
+                    Number(data.total_current_capacity).toFixed(2);
+
+                row.cells[6].innerHTML =
+                    Number(data.utilization_percent).toFixed(2) + "%";
+
+                row.cells[7].innerHTML =
+                    data.calculated_time;
+            }
+
+            return;
+        }
+
+
+        // ======================================
+        // GRID ALERT
+        // ======================================
+
+        if(data.type === "zone"){
+
+            const card = document.createElement("div");
+
+            card.className = "alert-card";
+
+            card.innerHTML = `
+
+                ⚠ GRID ALERT
+
+                <hr>
+
+                <b>Zone :</b> ${data.zone}<br><br>
+
+                <b>Utilization :</b> ${data.utilization}%<br><br>
+
+                <b>${data.message}</b>
+
+            `;
+
+            alertBox.prepend(card);
+
+            const row = document.getElementById(data.zone);
+
+            if(row){
+
+                row.classList.add("zone-alert");
+
+            }
+
+            return;
+        }
+
+    };
+
+
+    // ===============================
+    // Error
+    // ===============================
+
+    socket.onerror = function(error){
+
+        console.log("WebSocket Error");
+
+        console.log(error);
+
+    };
+
+
+    // ===============================
+    // Closed
+    // ===============================
+
+    socket.onclose = function(){
+
+        console.log("GRID Disconnected");
+
+        status.innerHTML = "Disconnected";
+
+        status.style.background = "red";
+
+        // Auto reconnect after 3 seconds
+        setTimeout(connectSocket,3000);
+
+    };
+
+}
+
+connectSocket();
+
+</script>
+
+</body>
+</html>
