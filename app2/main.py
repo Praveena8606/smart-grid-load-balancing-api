@@ -1,6 +1,10 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import RedirectResponse
+from app.routers import websocket
+import asyncio
+from app.redis_listener import redis_listener
 from app.routers import (
     zone_load,
     analytics,
@@ -14,6 +18,19 @@ app = FastAPI(
     version="1.0.0"
 )
 
+@app.on_event("startup")
+async def startup():
+
+    asyncio.create_task(redis_listener())
+
+# Static Files
+app.mount(
+    "/static",
+    StaticFiles(directory="app/static"),
+    name="static"
+)
+
+# CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -22,36 +39,34 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(
-    zone_load.router,
-    prefix="/zone-load",
-    tags=["Zone Load"]
-)
+# --------------------------------------------------
+# Include Routers
+# DO NOT add prefixes here because each router
+# already has its own prefix.
+# --------------------------------------------------
 
-app.include_router(
-    analytics.router,
-    prefix="/analytics",
-    tags=["Analytics"]
-)
+app.include_router(zone_load.router)
+app.include_router(analytics.router)
+app.include_router(alerts.router)
+app.include_router(forecast.router)
+app.include_router(dashboard.router)
+app.include_router(websocket.router)
 
-app.include_router(
-    alerts.router,
-    prefix="/alerts",
-    tags=["Alerts"]
-)
 
-app.include_router(
-    forecast.router,
-    prefix="/forecast",
-    tags=["Forecast"]
-)
+# --------------------------------------------------
+# Root
+# --------------------------------------------------
 
-app.include_router(
-    dashboard.router,
-    prefix="/dashboard",
-    tags=["Dashboard"]
-)
+@app.get("/", include_in_schema=False)
+async def root():
+    return RedirectResponse(url="/dashboard/")
+
+# --------------------------------------------------
+# Health Check
+# --------------------------------------------------
 
 @app.get("/health")
-def health():
-    return {"status": "running"}
+async def health():
+    return {
+        "status": "running"
+    }

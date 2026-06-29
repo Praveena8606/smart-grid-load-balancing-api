@@ -38,7 +38,7 @@ class ZoneAnalyticsSummary(Base):
 
     house_count = Column(Integer)
 
-    total_current_capacity = Column(Float)
+    total_power_capacity = Column(Float)
 
     utilization_percent = Column(Float)
 

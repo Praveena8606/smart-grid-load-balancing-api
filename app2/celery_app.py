@@ -12,29 +12,28 @@ celery.conf.beat_schedule = {
 
     "calculate-zone-average": {
         "task": "app.tasks.calculate_zone_averages",
-        "schedule": 10.0
+        "schedule": 10.0,
     },
 
     "check-zone-alerts": {
         "task": "app.tasks.check_zone_alerts",
-        "schedule": 10.0
+        "schedule": 10.0,
     },
 
-    "generate-forecast": {
-        "task": "app.tasks.generate_forecast",
-        "schedule": 10.0
-    },
+    # "generate-forecast": {
+    #     "task": "app.tasks.generate_forecast",
+    #     "schedule": 10.0,
+    # },
 
-    "forecast-analytics": {
-        "task": "app.tasks.calculate_forecast_analytics",
-        "schedule": 10.0
-    },
+    # "forecast-analytics": {
+    #     "task": "app.tasks.calculate_forecast_analytics",
+    #     "schedule": 10.0,
+    # },
 
-    "forecast-alert": {
-        "task": "app.tasks.check_forecast_alerts",
-        "schedule": 10.0
-
+    # "forecast-alert": {
+    #     "task": "app.tasks.check_forecast_alerts",
+    #     "schedule": 10.0,
+    # },
 }
-}
 
-
+celery.autodiscover_tasks(["app"])
