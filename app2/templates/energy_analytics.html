@@ -1,41 +1,81 @@
-```html
 <!DOCTYPE html>
 <html lang="en">
 
 <head>
-
     <meta charset="UTF-8">
-    <title>Energy Analytics Dashboard</title>
+    <title>Forecast WebSocket Status</title>
 
-    <link rel="stylesheet" href="/static/css/dashboard.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+
+        body{
+            font-family:Arial,sans-serif;
+            background:#f5f5f5;
+            display:flex;
+            justify-content:center;
+            align-items:center;
+            height:100vh;
+        }
+
+        #connectionStatus{
+            width:250px;
+            padding:20px;
+            text-align:center;
+            font-size:22px;
+            font-weight:bold;
+            color:white;
+            background:red;
+            border-radius:10px;
+            box-shadow:0 2px 10px rgba(0,0,0,.2);
+        }
+
+    </style>
 
 </head>
+  
 
 <body>
 
-<div class="container">
+    <div class="container">
 
     <h1>ENERGY ANALYTICS DASHBOARD</h1>
 
-    <!-- Connection Status -->
-
-    <div id="connectionStatus"
-         style="
-            width:220px;
-            background:red;
-            color:white;
-            padding:10px;
-            border-radius:6px;
-            margin-bottom:20px;
-            text-align:center;
-            font-weight:bold;
-         ">
-        Disconnected
+    <div id="connectionStatus">
+        Connecting...
     </div>
 
-    <!-- Forecast Alerts -->
+    <br><br>
 
-    <div id="forecastAlertBox"></div>
+    <label><b>Select Zone</b></label>
+
+    <select id="zoneSelect">
+        <option value="">Select Zone</option>
+        <option value="ZONE_01">ZONE_01</option>
+        <option value="ZONE_02">ZONE_02</option>
+        <option value="ZONE_03">ZONE_03</option>
+        <option value="ZONE_04">ZONE_04</option>
+        <option value="ZONE_05">ZONE_05</option>
+        <option value="ZONE_06">ZONE_06</option>
+        <option value="ZONE_07">ZONE_07</option>
+        <option value="ZONE_08">ZONE_08</option>
+        <option value="ZONE_09">ZONE_09</option>
+        <option value="ZONE_10">ZONE_10</option>
+    </select>
+
+    <br><br>
+
+    <label><b>Select Forecast Date</b></label>
+
+    <input type="date" id="forecastDate">
+
+    <br><br>
+
+    <button id="generateBtn">
+        Generate Forecast
+    </button>
+
+    <br><br>
 
     <table>
 
@@ -44,12 +84,12 @@
         <tr>
 
             <th>Zone</th>
-            <th>Average Forecast Power (kW)</th>
-            <th>Maximum Forecast (kW)</th>
-            <th>Minimum Forecast (kW)</th>
+            <th>Forecast Power</th>
+            <th>Max</th>
+            <th>Min</th>
             <th>House Count</th>
-            <th>Forecast Utilization (%)</th>
-            <th>Calculated Time</th>
+            <th>Utilization</th>
+            <th>Date</th>
 
         </tr>
 
@@ -57,183 +97,167 @@
 
         <tbody>
 
-        {% for row in analytics %}
+        <tr id="forecastRow">
 
-        <tr id="{{ row.zone_id }}">
-
-            <td>{{ row.zone_id }}</td>
-
-            <td>{{ "%.2f"|format(row.avg_forecast_power) }}</td>
-
-            <td>{{ "%.2f"|format(row.max_forecast_power) }}</td>
-
-            <td>{{ "%.2f"|format(row.min_forecast_power) }}</td>
-
-            <td>{{ row.house_count }}</td>
-
-            <td>{{ "%.2f"|format(row.forecast_utilization_percent) }}%</td>
-
-            <td>
-                {{ row.calculated_time.strftime("%d-%m-%Y %H:%M:%S") if row.calculated_time else "-" }}
+            <td colspan="7">
+                No Forecast Generated
             </td>
 
         </tr>
-
-        {% endfor %}
 
         </tbody>
 
     </table>
 
-    <br>
+    <br><br>
 
-    <button onclick="window.location.href='/dashboard/'">
-
-        ← Back Dashboard
-
-    </button>
+    <canvas
+        id="forecastChart"
+        width="900"
+        height="350">
+    </canvas>
 
 </div>
 
+
 <script>
 
-const socket = new WebSocket("ws://127.0.0.1:8000/ws/forecast");
+// -----------------------------
+// WebSocket Connection
+// -----------------------------
 
 const status = document.getElementById("connectionStatus");
-const alertBox = document.getElementById("forecastAlertBox");
+
+function connectSocket() {
+
+    status.innerHTML = "🟡 Connecting...";
+    status.style.background = "orange";
+
+    const socket = new WebSocket("ws://127.0.0.1:8000/ws/forecast");
+
+    socket.onopen = function () {
+
+        console.log("Forecast WebSocket Connected");
+
+        status.innerHTML = "🟢 Connected";
+        status.style.background = "green";
+
+    };
+
+    socket.onmessage = function(event){
+
+        console.log("Received:", event.data);
+
+    };
+
+    socket.onerror = function(error){
+
+        console.log("Forecast WebSocket Error");
+        console.log(error);
+
+    };
+
+    socket.onclose = function(){
+
+        console.log("Forecast WebSocket Disconnected");
+
+        status.innerHTML = "🔴 Disconnected";
+        status.style.background = "red";
+
+        // Auto reconnect after 3 seconds
+        setTimeout(connectSocket,3000);
+
+    };
+
+}
+
+// Start WebSocket
+connectSocket();
 
 
-// =======================================
-// Connected
-// =======================================
+// -----------------------------
+// Date Picker (Today → Next 30 Days)
+// -----------------------------
 
-socket.onopen = function () {
+const today = new Date();
 
-    console.log("Forecast WebSocket Connected");
+const maxDate = new Date();
 
-    status.innerHTML = "Connected";
-    status.style.background = "green";
+maxDate.setDate(today.getDate() + 30);
 
-};
+document.getElementById("forecastDate").min =
+today.toISOString().split("T")[0];
+
+document.getElementById("forecastDate").max =
+maxDate.toISOString().split("T")[0];
 
 
-// =======================================
-// Receive Message
-// =======================================
+// -----------------------------
+// Generate Forecast Button
+// -----------------------------
 
-socket.onmessage = function (event) {
+document.getElementById("generateBtn").onclick = async function(){
 
-    const data = JSON.parse(event.data);
+    const zone = document.getElementById("zoneSelect").value;
+    const date = document.getElementById("forecastDate").value;
 
-    console.log(data);
+    if(zone === "" || date === ""){
 
-    // -----------------------------------
-    // Live Table Refresh
-    // -----------------------------------
-
-    if (data.type === "forecast_update") {
-
-        const row = document.getElementById(data.zone_id);
-
-        if (row) {
-
-            row.cells[1].innerHTML =
-                Number(data.avg_forecast_power).toFixed(2);
-
-            row.cells[2].innerHTML =
-                Number(data.max_forecast_power).toFixed(2);
-
-            row.cells[3].innerHTML =
-                Number(data.min_forecast_power).toFixed(2);
-
-            row.cells[4].innerHTML =
-                data.house_count;
-
-            row.cells[5].innerHTML =
-                Number(data.forecast_utilization_percent).toFixed(2) + "%";
-
-            row.cells[6].innerHTML =
-                data.calculated_time;
-        }
+        alert("Please select Zone and Forecast Date.");
 
         return;
+
     }
 
-    // -----------------------------------
-    // Forecast Alert
-    // -----------------------------------
+    try{
 
-    if (data.type === "forecast") {
+        const response = await fetch("/forecast/generate",{
 
-        const html = `
+            method:"POST",
 
-            <div style="
-                background:#ff9800;
-                color:white;
-                padding:15px;
-                margin-bottom:15px;
-                border-radius:8px;
-                font-size:18px;
-                font-weight:bold;
-                box-shadow:0 2px 10px rgba(0,0,0,.3);
-            ">
+            headers:{
+                "Content-Type":"application/json"
+            },
 
-                ⚡ FORECAST ALERT
+            body:JSON.stringify({
 
-                <hr>
+                zone_id:zone,
+                forecast_date:date
 
-                <b>Zone :</b> ${data.zone}<br><br>
+            })
 
-                <b>Forecast Utilization :</b>
-                ${data.utilization}%<br><br>
-
-                <b>Message :</b>
-                ${data.message}
-
-            </div>
-
-        `;
-
-        alertBox.insertAdjacentHTML("afterbegin", html);
-
-        window.scrollTo({
-            top: 0,
-            behavior: "smooth"
         });
+
+        const data = await response.json();
+
+        console.log(data);
+
+        // --------------------------
+        // TODO
+        // Update forecast table
+        // --------------------------
+
+        // --------------------------
+        // TODO
+        // Update chart
+        // --------------------------
+
     }
+    catch(error){
 
-};
+        console.log(error);
 
+        alert("Unable to generate forecast.");
 
-// =======================================
-// Error
-// =======================================
-
-socket.onerror = function (error) {
-
-    console.log("Forecast WebSocket Error");
-
-    console.log(error);
-
-};
-
-
-// =======================================
-// Closed
-// =======================================
-
-socket.onclose = function () {
-
-    console.log("Forecast WebSocket Disconnected");
-
-    status.innerHTML = "Disconnected";
-
-    status.style.background = "red";
+    }
 
 };
 
 </script>
+    
 
 </body>
+
+
 </html>
 

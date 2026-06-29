@@ -35,6 +35,148 @@
             font-weight:bold;
         }
 
+        .zone-container{
+    display:grid;
+    grid-template-columns:repeat(5,1fr);
+    gap:15px;
+    margin-bottom:30px;
+}
+
+.zone-card{
+    background:#4CAF50;
+    color:white;
+    border-radius:10px;
+    padding:20px;
+    text-align:center;
+    transition:.3s;
+    box-shadow:0 2px 8px rgba(0,0,0,.2);
+}
+
+.zone-card h3{
+    margin:0;
+    font-size:20px;
+}
+
+.zone-card .percent{
+    margin-top:15px;
+    font-size:30px;
+    font-weight:bold;
+}
+
+.top-bar{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:25px;
+}
+
+.notification{
+    position:relative;
+}
+
+#bellBtn{
+    font-size:28px;
+    cursor:pointer;
+    background:none;
+    border:none;
+}
+
+#badge{
+    position:absolute;
+    top:-6px;
+    right:-6px;
+
+    background:red;
+    color:white;
+
+    border-radius:50%;
+    width:22px;
+    height:22px;
+
+    display:flex;
+    justify-content:center;
+    align-items:center;
+
+    font-size:12px;
+}
+
+.notification-list{
+
+    display:none;
+
+    position:absolute;
+
+    right:0;
+
+    top:45px;
+
+    width:320px;
+
+    max-height:400px;
+
+    overflow-y:auto;
+
+    background:white;
+
+    border-radius:10px;
+
+    box-shadow:0 0 12px rgba(0,0,0,.2);
+
+    z-index:1000;
+}
+
+.notification-item{
+
+    padding:15px;
+
+    border-bottom:1px solid #ddd;
+
+    font-size:15px;
+}
+
+
+#toastContainer{
+
+    position:fixed;
+
+    top:20px;
+
+    right:20px;
+
+    z-index:9999;
+}
+
+.toast{
+
+    background:#f44336;
+
+    color:white;
+
+    padding:15px;
+
+    margin-bottom:10px;
+
+    border-radius:10px;
+
+    animation:slide .3s;
+}
+
+@keyframes slide{
+
+from{
+
+transform:translateX(100%);
+
+}
+
+to{
+
+transform:translateX(0);
+
+}
+
+}
+
     </style>
 
 </head>
@@ -45,13 +187,35 @@
 
     <h1>GRID OPERATOR DASHBOARD</h1>
 
+
+    <div class="top-bar">
+
     <div id="connectionStatus">
         Connecting...
     </div>
 
+    <div class="notification">
+
+        <button id="bellBtn">
+            🔔
+            <span id="badge">0</span>
+        </button>
+
+        <div id="notificationList" class="notification-list">
+
+        </div>
+
+    </div>
+
+</div>
+
+    <!-- <div id="connectionStatus">
+        Connecting...
+    </div> -->
+
     <br><br>
 
-    <div id="alertBox"></div>
+    <div id="toastContainer"></div>
 
     <h2>Latest Grid Load Data</h2>
 
@@ -95,6 +259,32 @@
 
     <br><br>
 
+
+    <h2>Zone Live Status</h2>
+
+<div id="zoneCards" class="zone-container">
+
+{% for row in analytics %}
+
+<div class="zone-card" id="card-{{ row.zone_id }}">
+
+    <h3>{{ row.zone_id }}</h3>
+
+    <div class="percent">
+
+        {{ "%.2f"|format(row.utilization_percent) }}%
+
+    </div>
+
+</div>
+
+{% endfor %}
+
+</div>
+
+
+    <br><br>
+
     <h2>Current Zone Analytics</h2>
 
     <table>
@@ -132,7 +322,7 @@
 
             <td>{{ row.house_count }}</td>
 
-            <td>{{ row.total_current_capacity }}</td>
+            <td>{{ row.total_power_capacity }}</td>
 
             <td>{{ "%.2f"|format(row.utilization_percent) }}%</td>
 
@@ -162,18 +352,45 @@
 
 <script>
 
-function connectSocket(){
+let alertCount = 0;
+
+const badge = document.getElementById("badge");
+const list = document.getElementById("notificationList");
+const toastContainer = document.getElementById("toastContainer");
+
+// =======================================
+// Bell Button
+// =======================================
+
+document.getElementById("bellBtn").onclick = function () {
+
+    if (list.style.display === "block") {
+
+        list.style.display = "none";
+
+    } else {
+
+        list.style.display = "block";
+
+    }
+
+};
+
+// =======================================
+// WebSocket Connection
+// =======================================
+
+function connectSocket() {
 
     const socket = new WebSocket("ws://127.0.0.1:8000/ws/grid");
 
     const status = document.getElementById("connectionStatus");
-    const alertBox = document.getElementById("alertBox");
 
-    // ===============================
+    // -----------------------------
     // Connected
-    // ===============================
+    // -----------------------------
 
-    socket.onopen = function(){
+    socket.onopen = function () {
 
         console.log("GRID Connected");
 
@@ -182,98 +399,144 @@ function connectSocket(){
 
     };
 
+    // -----------------------------
+    // Receive Data
+    // -----------------------------
 
-    // ===============================
-    // Receive Message
-    // ===============================
-
-    socket.onmessage = function(event){
+    socket.onmessage = function (event) {
 
         const data = JSON.parse(event.data);
 
         console.log(data);
 
-        // ======================================
-        // LIVE TABLE UPDATE
-        // ======================================
+        // ==========================================
+        // LIVE GRID UPDATE
+        // ==========================================
 
-        if(data.type === "grid_update"){
+        if (data.type === "grid_update") {
 
             const row = document.getElementById(data.zone_id);
 
-            if(row){
+            if (row) {
 
-                row.cells[1].innerHTML =
-                    Number(data.avg_power_kw).toFixed(2);
+                row.cells[1].innerHTML = Number(data.avg_power_kw).toFixed(2);
+                row.cells[2].innerHTML = Number(data.avg_voltage).toFixed(2);
+                row.cells[3].innerHTML = Number(data.avg_current).toFixed(2);
+                row.cells[4].innerHTML = data.house_count;
+                row.cells[5].innerHTML = Number(data.total_power_capacity).toFixed(2);
+                row.cells[6].innerHTML = Number(data.utilization_percent).toFixed(2) + "%";
+                row.cells[7].innerHTML = data.calculated_time;
 
-                row.cells[2].innerHTML =
-                    Number(data.avg_voltage).toFixed(2);
+            }
 
-                row.cells[3].innerHTML =
-                    Number(data.avg_current).toFixed(2);
+            // Update Zone Card
 
-                row.cells[4].innerHTML =
-                    data.house_count;
+            const card = document.getElementById("card-" + data.zone_id);
 
-                row.cells[5].innerHTML =
-                    Number(data.total_current_capacity).toFixed(2);
+            if (card) {
 
-                row.cells[6].innerHTML =
+                card.querySelector(".percent").innerHTML =
                     Number(data.utilization_percent).toFixed(2) + "%";
 
-                row.cells[7].innerHTML =
-                    data.calculated_time;
+                if (data.utilization_percent < 80) {
+
+                    card.style.background = "#4CAF50";
+
+                }
+                else if (data.utilization_percent < 90) {
+
+                    card.style.background = "#FF9800";
+
+                }
+                else {
+
+                    card.style.background = "#F44336";
+
+                }
+
             }
 
             return;
+
         }
 
+        // ==========================================
+        // ZONE ALERT
+        // ==========================================
 
-        // ======================================
-        // GRID ALERT
-        // ======================================
+        if (data.type === "zone") {
 
-        if(data.type === "zone"){
+            // Update Badge
 
-            const card = document.createElement("div");
+            alertCount++;
 
-            card.className = "alert-card";
+            badge.innerHTML = alertCount;
 
-            card.innerHTML = `
+            // Toast Popup
 
-                ⚠ GRID ALERT
+            const toast = document.createElement("div");
 
-                <hr>
+            toast.className = "toast";
 
-                <b>Zone :</b> ${data.zone}<br><br>
-
-                <b>Utilization :</b> ${data.utilization}%<br><br>
-
-                <b>${data.message}</b>
-
+            toast.innerHTML = `
+                <b>⚠ ${data.zone}</b><br>
+                ${data.message}<br>
+                Utilization : ${data.utilization}%
             `;
 
-            alertBox.prepend(card);
+            toastContainer.appendChild(toast);
+
+            setTimeout(() => {
+
+                toast.remove();
+
+            }, 4000);
+
+            // Notification History
+
+            const item = document.createElement("div");
+
+            item.className = "notification-item";
+
+            item.innerHTML = `
+                <b>${data.zone}</b><br>
+                Utilization : ${data.utilization}%<br>
+                ${data.message}
+            `;
+
+            list.prepend(item);
+
+            // Highlight Table Row
 
             const row = document.getElementById(data.zone);
 
-            if(row){
+            if (row) {
 
                 row.classList.add("zone-alert");
 
             }
 
+            // Highlight Card
+
+            const card = document.getElementById("card-" + data.zone);
+
+            if (card) {
+
+                card.style.background = "#F44336";
+
+            }
+
             return;
+
         }
 
     };
 
-
-    // ===============================
+    // -----------------------------
     // Error
-    // ===============================
+    // -----------------------------
 
-    socket.onerror = function(error){
+    socket.onerror = function (error) {
 
         console.log("WebSocket Error");
 
@@ -281,12 +544,11 @@ function connectSocket(){
 
     };
 
-
-    // ===============================
+    // -----------------------------
     // Closed
-    // ===============================
+    // -----------------------------
 
-    socket.onclose = function(){
+    socket.onclose = function () {
 
         console.log("GRID Disconnected");
 
@@ -294,8 +556,7 @@ function connectSocket(){
 
         status.style.background = "red";
 
-        // Auto reconnect after 3 seconds
-        setTimeout(connectSocket,3000);
+        setTimeout(connectSocket, 3000);
 
     };
 
