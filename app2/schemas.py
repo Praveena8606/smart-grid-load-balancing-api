@@ -1,7 +1,22 @@
 
 from pydantic import BaseModel
 from datetime import datetime
+from datetime import date
 
+class ForecastRequest(BaseModel):
+    zone_id: str
+    forecast_date: date
+
+class ForecastResponse(BaseModel):
+    zone_id: str
+    forecast_date: date
+    predicted_power_kw: float
+    avg_power_kw: float
+    max_power_kw: float
+    min_power_kw: float
+    house_count: int
+    utilization_percent: float
+    historical_power: list[float]
 
 class ZoneLoadCreate(BaseModel):
     zone_id: str

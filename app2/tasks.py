@@ -22,6 +22,8 @@ r = redis.Redis(
     decode_responses=True
 )
 
+
+
 @celery.task
 def calculate_zone_averages():
 

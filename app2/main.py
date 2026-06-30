@@ -1,10 +1,14 @@
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import RedirectResponse
 from app.routers import websocket
 import asyncio
+from app.routers import forecast
 from app.redis_listener import redis_listener
+import app.routers.forecast as forecast
+from app.routers import forecast
 from app.routers import (
     zone_load,
     analytics,
@@ -48,9 +52,10 @@ app.add_middleware(
 app.include_router(zone_load.router)
 app.include_router(analytics.router)
 app.include_router(alerts.router)
-app.include_router(forecast.router)
 app.include_router(dashboard.router)
 app.include_router(websocket.router)
+app.include_router(forecast.router)
+
 
 
 # --------------------------------------------------
@@ -70,3 +75,4 @@ async def health():
     return {
         "status": "running"
     }
+

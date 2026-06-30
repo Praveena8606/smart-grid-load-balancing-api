@@ -1,7 +1,7 @@
 from sqlalchemy.orm import declarative_base
 from sqlalchemy import Column, Integer, String, Float, DateTime
 
-Base = declarative_base()
+Base = declarative_base()    
 
 class ZoneLoadSummary(Base):
 
