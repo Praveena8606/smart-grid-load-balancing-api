@@ -1,49 +1,52 @@
-import './App.css';
+import React, { useEffect, useState } from "react";
+import API from "./api/api";
 
 function App() {
+const [loads, setLoads] = useState([]);
+
+ useEffect(() => {
+  API.get("/loads")
+    .then((response) => {
+      console.log("DATA:", response.data);
+      setLoads(response.data);
+    })
+    .catch((error) => {
+      console.error(error);
+    });
+}, []);
+
   return (
     <div className="container mt-5">
 
-      <h1 className="text-center text-primary">
-        Smart Grid Load Balancing Dashboard
+      <h1 className="text-center mb-4">
+        Smart Grid Dashboard
       </h1>
 
-      <p className="text-center">
-        Grid Operator Monitoring System
-      </p>
+      <table className="table table-bordered table-striped">
 
-      <hr />
+        <thead className="table-dark">
+          <tr>
+            <th>Area</th>
+            <th>Current Load</th>
+            <th>Status</th>
+          </tr>
+        </thead>
 
-      <div className="row">
+        <tbody>
+  {loads.map((item, index) => (
+    <tr key={index}>
+      <td>{item.area}</td>
+      <td>{item.current_load}</td>
+      <td>
+        {item.current_load > 90
+          ? "Overloaded"
+          : "Normal"}
+      </td>
+    </tr>
+  ))}
+</tbody>
 
-        <div className="col-md-4">
-          <div className="card text-center">
-            <div className="card-body">
-              <h5>Total Sectors</h5>
-              <h2>0</h2>
-            </div>
-          </div>
-        </div>
-
-        <div className="col-md-4">
-          <div className="card text-center">
-            <div className="card-body">
-              <h5>Overloaded Sectors</h5>
-              <h2>0</h2>
-            </div>
-          </div>
-        </div>
-
-        <div className="col-md-4">
-          <div className="card text-center">
-            <div className="card-body">
-              <h5>Average Usage</h5>
-              <h2>0%</h2>
-            </div>
-          </div>
-        </div>
-
-      </div>
+      </table>
 
     </div>
   );
