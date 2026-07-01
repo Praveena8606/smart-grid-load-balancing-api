@@ -5,6 +5,9 @@ function App() {
 const [loads, setLoads] = useState([]);
 const [dashboard, setDashboard] = useState({});
 const [gridStatus, setGridStatus] = useState({});
+const [alerts, setAlerts] = useState([]);
+const [predictions, setPredictions] = useState([]);
+const [recommendations, setRecommendations] = useState([]);
 useEffect(() => {
 
   API.get("/loads")
@@ -32,6 +35,31 @@ useEffect(() => {
   .catch((error) => {
     console.error(error);
   });
+  API.get("/alerts")
+  .then((response) => {
+    console.log("Alerts:", response.data);
+    setAlerts(response.data);
+  })
+  .catch((error) => {
+    console.error(error);
+  });
+  API.get("/prediction")
+  .then((response) => {
+    console.log("Prediction:", response.data);
+    setPredictions(response.data);
+  })
+  .catch((error) => {
+    console.error(error);
+  });
+  API.get("/recommendations")
+  .then((response) => {
+    console.log("Recommendations:", response.data);
+    setRecommendations(response.data);
+  })
+  .catch((error) => {
+    console.error(error);
+  });
+
 }, []);
 
   return (
@@ -77,6 +105,135 @@ useEffect(() => {
 
   </div>
 </div>
+</div>
+<div className="card mb-4">
+  <div className="card-header bg-warning">
+    <h4>⚠ Grid Alerts</h4>
+  </div>
+
+  <div className="card-body">
+
+    {alerts.length === 0 ? (
+
+      <p>No overloaded sectors.</p>
+
+    ) : (
+
+      <ul className="list-group">
+
+        {alerts.map((alert, index) => (
+
+          <li key={index} className="list-group-item">
+
+            <strong>{alert.area}</strong> -
+
+            Current Load: {alert.current_load}
+
+            {" / "}
+
+            Capacity: {alert.max_capacity}
+
+            {" ("}
+
+            {alert.usage_percent}%
+
+            {")"}
+
+          </li>
+
+        ))}
+
+      </ul>
+
+    )}
+
+  </div>
+</div>
+<div className="card mb-4">
+
+  <div className="card-header bg-info text-white">
+    <h4>📈 Load Prediction</h4>
+  </div>
+
+  <div className="card-body">
+
+    <table className="table table-bordered">
+
+      <thead>
+
+        <tr>
+          <th>Area</th>
+          <th>Current Load</th>
+          <th>Predicted Load</th>
+        </tr>
+
+      </thead>
+
+      <tbody>
+
+        {predictions.map((item, index) => (
+
+          <tr key={index}>
+
+            <td>{item.area}</td>
+
+            <td>{item.current_load}</td>
+
+            <td>{item.predicted_load}</td>
+
+          </tr>
+
+        ))}
+
+      </tbody>
+
+    </table>
+
+  </div>
+
+</div>
+<div className="card mb-4">
+
+  <div className="card-header bg-success text-white">
+    <h4>💡 Smart Recommendations</h4>
+  </div>
+
+  <div className="card-body">
+
+    <table className="table table-bordered table-hover">
+
+      <thead className="table-light">
+
+        <tr>
+          <th>Area</th>
+          <th>Usage %</th>
+          <th>Recommendation</th>
+        </tr>
+
+      </thead>
+
+      <tbody>
+
+        {recommendations.map((item, index) => (
+
+          <tr key={index}>
+
+            <td>{item.area}</td>
+
+            <td>{item.usage_percent}%</td>
+
+            <td>{item.recommendation}</td>
+
+          </tr>
+
+        ))}
+
+      </tbody>
+
+    </table>
+
+  </div>
+
 </div>
       <table className="table table-bordered table-striped">
 
