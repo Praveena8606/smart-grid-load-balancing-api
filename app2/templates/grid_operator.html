@@ -10,58 +10,21 @@
 
     <style>
 
-        #connectionStatus{
-            display:inline-block;
-            padding:8px 15px;
-            border-radius:6px;
-            color:white;
-            background:red;
-            margin-bottom:20px;
-            font-weight:bold;
-        }
-
-        .alert-card{
-            background:#ff4d4d;
-            color:white;
-            padding:15px;
-            margin-bottom:10px;
-            border-radius:8px;
-            font-size:17px;
-            font-weight:bold;
-        }
-
-        .zone-alert{
-            background:#ffe0e0 !important;
-            font-weight:bold;
-        }
-
-        .zone-container{
-    display:grid;
-    grid-template-columns:repeat(5,1fr);
-    gap:15px;
-    margin-bottom:30px;
-}
-
-.zone-card{
-    background:#4CAF50;
-    color:white;
-    border-radius:10px;
-    padding:20px;
-    text-align:center;
-    transition:.3s;
-    box-shadow:0 2px 8px rgba(0,0,0,.2);
-}
-
-.zone-card h3{
+body{
     margin:0;
-    font-size:20px;
+    padding:20px;
+    background:#f4f6fb;
+    font-family:Arial, Helvetica, sans-serif;
 }
 
-.zone-card .percent{
-    margin-top:15px;
-    font-size:30px;
-    font-weight:bold;
+.container{
+    max-width:1500px;
+    margin:auto;
 }
+
+/* --------------------------
+   Top Bar
+-------------------------- */
 
 .top-bar{
     display:flex;
@@ -70,114 +33,221 @@
     margin-bottom:25px;
 }
 
+#connectionStatus{
+    padding:10px 18px;
+    border-radius:8px;
+    background:red;
+    color:#fff;
+    font-weight:bold;
+}
+
+/* --------------------------
+   Notification
+-------------------------- */
+
 .notification{
     position:relative;
 }
 
 #bellBtn{
-    font-size:28px;
-    cursor:pointer;
     background:none;
     border:none;
+    font-size:28px;
+    cursor:pointer;
 }
 
 #badge{
     position:absolute;
     top:-6px;
     right:-6px;
-
-    background:red;
-    color:white;
-
-    border-radius:50%;
     width:22px;
     height:22px;
-
+    background:red;
+    color:white;
+    border-radius:50%;
     display:flex;
     justify-content:center;
     align-items:center;
-
     font-size:12px;
+    font-weight:bold;
 }
 
 .notification-list{
-
     display:none;
-
     position:absolute;
-
-    right:0;
-
     top:45px;
-
+    right:0;
     width:320px;
-
     max-height:400px;
-
     overflow-y:auto;
-
     background:white;
-
     border-radius:10px;
-
-    box-shadow:0 0 12px rgba(0,0,0,.2);
-
+    box-shadow:0 4px 12px rgba(0,0,0,.25);
     z-index:1000;
 }
 
 .notification-item{
-
     padding:15px;
-
     border-bottom:1px solid #ddd;
-
     font-size:15px;
 }
 
+/* --------------------------
+   Section Title
+-------------------------- */
+
+.section-title{
+    margin:30px 0 20px;
+    color:#2c3e50;
+    font-size:28px;
+}
+
+/* --------------------------
+   Zone Cards
+-------------------------- */
+
+.zone-container{
+    display:grid;
+    grid-template-columns:repeat(5,1fr);
+    gap:18px;
+    margin-bottom:35px;
+}
+
+.zone-card{
+    background:#4CAF50;
+    color:white;
+    border-radius:12px;
+    padding:22px;
+    text-align:center;
+    box-shadow:0 4px 10px rgba(0,0,0,.18);
+    transition:.3s;
+}
+
+.zone-card h3{
+    margin:0;
+    font-size:22px;
+}
+
+.zone-card .percent{
+    margin-top:15px;
+    font-size:34px;
+    font-weight:bold;
+}
+
+/* --------------------------
+   Analytics Table
+-------------------------- */
+
+.analytics-card{
+    background:white;
+    border-radius:12px;
+    padding:25px;
+    box-shadow:0 4px 12px rgba(0,0,0,.12);
+}
+
+.analytics-table{
+    width:100%;
+    border-collapse:collapse;
+}
+
+.analytics-table thead{
+    background:#1f4e79;
+    color:white;
+}
+
+.analytics-table th{
+    padding:15px;
+    text-align:center;
+    font-size:15px;
+}
+
+.analytics-table td{
+    padding:14px;
+    text-align:center;
+    border-bottom:1px solid #e5e5e5;
+}
+
+.analytics-table tbody tr:nth-child(even){
+    background:#fafafa;
+}
+
+.analytics-table tbody tr:hover{
+    background:#eef7ff;
+}
+
+.zone-alert{
+    background:#ffe0e0 !important;
+    font-weight:bold;
+}
+
+/* --------------------------
+   Utilization Badge
+-------------------------- */
+
+.util-badge{
+    background:#4CAF50;
+    color:white;
+    padding:6px 12px;
+    border-radius:20px;
+    font-weight:bold;
+}
+
+/* --------------------------
+   Back Button
+-------------------------- */
+
+.back-btn{
+    margin-top:25px;
+    padding:12px 24px;
+    background:#1f4e79;
+    color:white;
+    border:none;
+    border-radius:8px;
+    cursor:pointer;
+    font-size:16px;
+}
+
+.back-btn:hover{
+    background:#163a5a;
+}
+
+/* --------------------------
+   Toast
+-------------------------- */
 
 #toastContainer{
-
     position:fixed;
-
     top:20px;
-
     right:20px;
-
     z-index:9999;
 }
 
 .toast{
-
     background:#f44336;
-
     color:white;
-
     padding:15px;
-
     margin-bottom:10px;
-
     border-radius:10px;
-
     animation:slide .3s;
 }
 
+.zone-alert{
+    background:#ffd6d6 !important;
+    color:#b30000;
+    font-weight:bold;
+}
+
+
 @keyframes slide{
-
-from{
-
-transform:translateX(100%);
-
+    from{
+        transform:translateX(100%);
+    }
+    to{
+        transform:translateX(0);
+    }
 }
 
-to{
-
-transform:translateX(0);
-
-}
-
-}
-
-    </style>
+</style>
 
 </head>
 
@@ -187,166 +257,140 @@ transform:translateX(0);
 
     <h1>GRID OPERATOR DASHBOARD</h1>
 
-
+    <!-- Top Bar -->
     <div class="top-bar">
 
-    <div id="connectionStatus">
-        Connecting...
-    </div>
+        <div id="connectionStatus">
+            Connecting...
+        </div>
 
-    <div class="notification">
+        <div class="notification">
 
-        <button id="bellBtn">
-            🔔
-            <span id="badge">0</span>
-        </button>
+            <button id="bellBtn">
+                🔔
+                <span id="badge">0</span>
+            </button>
 
-        <div id="notificationList" class="notification-list">
+            <div id="notificationList" class="notification-list"></div>
 
         </div>
 
     </div>
 
-</div>
-
-    <!-- <div id="connectionStatus">
-        Connecting...
-    </div> -->
-
-    <br><br>
-
+    <!-- Toast Messages -->
     <div id="toastContainer"></div>
 
-    <h2>Latest Grid Load Data</h2>
+    <!-- ============================= -->
+    <!-- Zone Live Status -->
+    <!-- ============================= -->
 
-    <table>
+    <h2 class="section-title">⚡ Zone Live Status</h2>
 
-        <thead>
-
-        <tr>
-
-            <th>Zone</th>
-            <th>House</th>
-            <th>Power (kW)</th>
-            <th>Voltage (V)</th>
-            <th>Current (A)</th>
-            <th>Recorded Time</th>
-
-        </tr>
-
-        </thead>
-
-        <tbody>
-
-        {% for row in loads %}
-
-        <tr>
-
-            <td>{{ row.zone_id }}</td>
-            <td>{{ row.house_id }}</td>
-            <td>{{ row.total_power_kw }}</td>
-            <td>{{ row.avg_voltage }}</td>
-            <td>{{ row.avg_current }}</td>
-            <td>{{ row.record_time }}</td>
-
-        </tr>
-
-        {% endfor %}
-
-        </tbody>
-
-    </table>
-
-    <br><br>
-
-
-    <h2>Zone Live Status</h2>
-
-<div id="zoneCards" class="zone-container">
-
-{% for row in analytics %}
-
-<div class="zone-card" id="card-{{ row.zone_id }}">
-
-    <h3>{{ row.zone_id }}</h3>
-
-    <div class="percent">
-
-        {{ "%.2f"|format(row.utilization_percent) }}%
-
-    </div>
-
-</div>
-
-{% endfor %}
-
-</div>
-
-
-    <br><br>
-
-    <h2>Current Zone Analytics</h2>
-
-    <table>
-
-        <thead>
-
-        <tr>
-
-            <th>Zone</th>
-            <th>Average Power</th>
-            <th>Average Voltage</th>
-            <th>Average Current</th>
-            <th>House Count</th>
-            <th>Total Capacity</th>
-            <th>Utilization %</th>
-            <th>Calculated Time</th>
-
-        </tr>
-
-        </thead>
-
-        <tbody>
+    <div id="zoneCards" class="zone-container">
 
         {% for row in analytics %}
 
-        <tr id="{{ row.zone_id }}">
+        <div class="zone-card" id="card-{{ row.zone_id }}">
 
-            <td>{{ row.zone_id }}</td>
+            <h3>{{ row.zone_id }}</h3>
 
-            <td>{{ "%.2f"|format(row.avg_power_kw) }}</td>
+            <div class="percent">
 
-            <td>{{ "%.2f"|format(row.avg_voltage) }}</td>
+                {{ "%.2f"|format(row.utilization_percent) }}%
 
-            <td>{{ "%.2f"|format(row.avg_current) }}</td>
+            </div>
 
-            <td>{{ row.house_count }}</td>
-
-            <td>{{ row.total_power_capacity }}</td>
-
-            <td>{{ "%.2f"|format(row.utilization_percent) }}%</td>
-
-            <td>
-
-                {{ row.calculated_time.strftime("%d-%m-%Y %H:%M:%S") if row.calculated_time else "-" }}
-
-            </td>
-
-        </tr>
+        </div>
 
         {% endfor %}
 
-        </tbody>
+    </div>
 
-    </table>
+    <!-- ============================= -->
+    <!-- Analytics Table -->
+    <!-- ============================= -->
 
-    <br>
+    <div class="analytics-card">
 
-    <button onclick="window.location.href='/dashboard/'">
+        <h2 class="section-title">
+            📊 Current Zone Analytics
+        </h2>
 
-        ← Back Dashboard
+        <table class="analytics-table">
 
-    </button>
+            <thead>
+
+                <tr>
+
+                    <th>Zone</th>
+                    <th>Avg Power (kW)</th>
+                    <th>Avg Voltage (V)</th>
+                    <th>Avg Current (A)</th>
+                    <th>Houses</th>
+                    <th>Total Capacity (kW)</th>
+                    <th>Utilization</th>
+                    <th>Updated Time</th>
+
+                </tr>
+
+            </thead>
+
+            <tbody>
+
+                {% for row in analytics %}
+
+                <tr id="{{ row.zone_id }}">
+
+                    <td>{{ row.zone_id }}</td>
+
+                    <td>{{ "%.2f"|format(row.avg_power_kw) }}</td>
+
+                    <td>{{ "%.2f"|format(row.avg_voltage) }}</td>
+
+                    <td>{{ "%.2f"|format(row.avg_current) }}</td>
+
+                    <td>{{ row.house_count }}</td>
+
+                    <td>{{ row.total_power_capacity }}</td>
+
+                    <td>
+
+                        <span class="util-badge">
+
+                            {{ "%.2f"|format(row.utilization_percent) }}%
+
+                        </span>
+
+                    </td>
+
+                    <td>
+
+                        {{ row.calculated_time.strftime("%d-%m-%Y %H:%M:%S") if row.calculated_time else "-" }}
+
+                    </td>
+
+                </tr>
+
+                {% endfor %}
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+    <!-- Back Button -->
+
+    <div style="margin-top:25px; text-align:center;">
+
+        <button class="back-btn"
+                onclick="window.location.href='/dashboard/'">
+
+            ← Back Dashboard
+
+        </button>
+
+    </div>
 
 </div>
 
@@ -358,27 +402,22 @@ const badge = document.getElementById("badge");
 const list = document.getElementById("notificationList");
 const toastContainer = document.getElementById("toastContainer");
 
-// =======================================
-// Bell Button
-// =======================================
+// ======================================
+// Notification Bell
+// ======================================
 
 document.getElementById("bellBtn").onclick = function () {
 
-    if (list.style.display === "block") {
-
-        list.style.display = "none";
-
-    } else {
-
-        list.style.display = "block";
-
-    }
+    list.style.display =
+        list.style.display === "block"
+            ? "none"
+            : "block";
 
 };
 
-// =======================================
+// ======================================
 // WebSocket Connection
-// =======================================
+// ======================================
 
 function connectSocket() {
 
@@ -386,9 +425,9 @@ function connectSocket() {
 
     const status = document.getElementById("connectionStatus");
 
-    // -----------------------------
+    // -----------------------------------
     // Connected
-    // -----------------------------
+    // -----------------------------------
 
     socket.onopen = function () {
 
@@ -399,9 +438,9 @@ function connectSocket() {
 
     };
 
-    // -----------------------------
-    // Receive Data
-    // -----------------------------
+    // -----------------------------------
+    // Receive Messages
+    // -----------------------------------
 
     socket.onmessage = function (event) {
 
@@ -409,11 +448,13 @@ function connectSocket() {
 
         console.log(data);
 
-        // ==========================================
-        // LIVE GRID UPDATE
-        // ==========================================
+        // =====================================
+        // GRID UPDATE
+        // =====================================
 
         if (data.type === "grid_update") {
+
+            // Update Analytics Table
 
             const row = document.getElementById(data.zone_id);
 
@@ -427,6 +468,18 @@ function connectSocket() {
                 row.cells[6].innerHTML = Number(data.utilization_percent).toFixed(2) + "%";
                 row.cells[7].innerHTML = data.calculated_time;
 
+                // Highlight row based on utilization
+
+                if (data.utilization_percent >= 90) {
+
+                    row.classList.add("zone-alert");
+
+                } else {
+
+                    row.classList.remove("zone-alert");
+
+                }
+
             }
 
             // Update Zone Card
@@ -438,19 +491,19 @@ function connectSocket() {
                 card.querySelector(".percent").innerHTML =
                     Number(data.utilization_percent).toFixed(2) + "%";
 
-                if (data.utilization_percent < 80) {
+                if (data.utilization_percent >= 90) {
 
-                    card.style.background = "#4CAF50";
+                    card.style.background = "#F44336";
 
                 }
-                else if (data.utilization_percent < 90) {
+                else if (data.utilization_percent >= 85) {
 
                     card.style.background = "#FF9800";
 
                 }
                 else {
 
-                    card.style.background = "#F44336";
+                    card.style.background = "#4CAF50";
 
                 }
 
@@ -460,19 +513,18 @@ function connectSocket() {
 
         }
 
-        // ==========================================
+        // =====================================
         // ZONE ALERT
-        // ==========================================
+        // =====================================
 
         if (data.type === "zone") {
 
-            // Update Badge
+            // Update Notification Badge
 
             alertCount++;
-
             badge.innerHTML = alertCount;
 
-            // Toast Popup
+            // Toast Notification
 
             const toast = document.createElement("div");
 
@@ -516,7 +568,7 @@ function connectSocket() {
 
             }
 
-            // Highlight Card
+            // Highlight Zone Card
 
             const card = document.getElementById("card-" + data.zone);
 
@@ -532,35 +584,40 @@ function connectSocket() {
 
     };
 
-    // -----------------------------
+    // -----------------------------------
     // Error
-    // -----------------------------
+    // -----------------------------------
 
     socket.onerror = function (error) {
 
         console.log("WebSocket Error");
 
-        console.log(error);
+        console.error(error);
 
     };
 
-    // -----------------------------
-    // Closed
-    // -----------------------------
+    // -----------------------------------
+    // Disconnected
+    // -----------------------------------
 
     socket.onclose = function () {
 
         console.log("GRID Disconnected");
 
         status.innerHTML = "Disconnected";
-
         status.style.background = "red";
+
+        // Auto Reconnect
 
         setTimeout(connectSocket, 3000);
 
     };
 
 }
+
+// ======================================
+// Start WebSocket
+// ======================================
 
 connectSocket();
 
