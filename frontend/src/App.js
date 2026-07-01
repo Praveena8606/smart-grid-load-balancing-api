@@ -4,6 +4,7 @@ import API from "./api/api";
 function App() {
 const [loads, setLoads] = useState([]);
 const [dashboard, setDashboard] = useState({});
+const [gridStatus, setGridStatus] = useState({});
 useEffect(() => {
 
   API.get("/loads")
@@ -23,7 +24,14 @@ useEffect(() => {
     .catch((error) => {
       console.error(error);
     });
-
+     API.get("/grid-status")
+  .then((response) => {
+    console.log("Grid:", response.data);
+    setGridStatus(response.data);
+  })
+  .catch((error) => {
+    console.error(error);
+  });
 }, []);
 
   return (
@@ -60,7 +68,15 @@ useEffect(() => {
       </div>
     </div>
   </div>
+<div className="card mb-4">
+  <div className="card-body text-center">
 
+    <h4>Grid Health Status</h4>
+
+    <h2>{gridStatus.grid_status}</h2>
+
+  </div>
+</div>
 </div>
       <table className="table table-bordered table-striped">
 
