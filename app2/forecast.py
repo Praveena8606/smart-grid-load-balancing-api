@@ -32,7 +32,7 @@ def run_forecast():
         query = f"""
         SELECT
             record_time,
-            total_power_kw
+            avg_power_kw
         FROM zone_load_summary
         WHERE zone_id = '{zone_id}'
         ORDER BY record_time
@@ -48,7 +48,7 @@ def run_forecast():
         df = df.rename(
             columns={
                 "record_time": "ds",
-                "total_power_kw": "y"
+                "avg_power_kw": "y"
             }
         )
 
@@ -69,7 +69,7 @@ def run_forecast():
 
         row = forecast.tail(1).iloc[0]
 
-        predicted_power = float(row["yhat"])
+        predicted_total_power  = float(row["yhat"])
 
         # Store forecast
         db.execute(
@@ -78,33 +78,33 @@ def run_forecast():
             (
                 zone_id,
                 forecast_time,
-                predicted_power_kw,
+                predicted_total_power _kw,
                 created_time
             )
             VALUES
             (
                 :zone_id,
                 :forecast_time,
-                :predicted_power,
+                :ppredicted_total_power ,
                 :created_time
             )
             """),
             {
                 "zone_id": zone_id,
                 "forecast_time": row["ds"],
-                "predicted_power": predicted_power,
+                "predicted_total_power ": predicted_total_power ,
                 "created_time": datetime.utcnow()
             }
         )
 
         # Forecast Alert
-        if predicted_power > 135:
+        if predicted_total_power  > 135:
 
             db.add(
                 ForecastAlertTable(
                     zone_id=zone_id,
                     forecast_time=row["ds"],
-                    predicted_power_kw=predicted_power,
+                    predicted_avg_power_kw=predicted_total_power ,
                     alert_message="Forecasted Power Above Threshold",
                     created_time=datetime.utcnow()
                 )
@@ -112,12 +112,12 @@ def run_forecast():
 
             print(
                 f"FORECAST ALERT -> {zone_id} | "
-                f"Predicted Power = {predicted_power}"
+                f"Predicted Power = {predicted_total_power }"
             )
 
         print(
             f"{zone_id} Forecast = "
-            f"{round(predicted_power, 2)} kW"
+            f"{round(predicted_total_power, 2)} kW"
         )
 
     db.commit()

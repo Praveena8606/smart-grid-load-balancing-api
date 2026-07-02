@@ -105,8 +105,17 @@ th{
     <br><br>
 
     <label><b>Select Forecast Date</b></label>
+<input type="date" id="forecastDate">
 
-    <input type="date" id="forecastDate">
+<br><br>
+
+<label><b>Start Time</b></label>
+<input type="time" id="startTime" step="300">
+
+&nbsp;&nbsp;&nbsp;
+
+<label><b>End Time</b></label>
+<input type="time" id="endTime" step="300">
 
     <br><br>
 
@@ -116,28 +125,28 @@ th{
 
     <br><br>
 
-    <table>
+<table>
 
 <thead>
 
 <tr>
-    <th>Zone</th>
-    <th>Forecast Power</th>
-    <th>Max</th>
-    <th>Min</th>
-    <th>House Count</th>
-    <th>Utilization</th>
-    <th>Date</th>
+
+<th>Time</th>
+<th>Forecast Power (kW)</th>
+<th>Utilization (%)</th>
+
 </tr>
 
 </thead>
 
-<tbody>
+<tbody id="forecastTableBody">
 
-<tr id="forecastRow">
+<tr>
 
-<td colspan="7">
+<td colspan="3">
+
 No Forecast Generated
+
 </td>
 
 </tr>
@@ -223,47 +232,52 @@ document.getElementById("forecastDate").max =
 maxDate.toISOString().split("T")[0];
 
 
+
+
+
+
 // ==========================================
 // Generate Forecast
 // ==========================================
 
-document.getElementById("generateBtn").onclick = async function(){
 
-    const zone =
-        document.getElementById("zoneSelect").value;
+document.getElementById("generateBtn").onclick = async function () {
 
-    const date =
-        document.getElementById("forecastDate").value;
+    const zone = document.getElementById("zoneSelect").value;
+    const date = document.getElementById("forecastDate").value;
+    const start = document.getElementById("startTime").value;
+    const end = document.getElementById("endTime").value;
 
-    if(zone==="" || date===""){
+    if (zone === "" || date === "" || start === "" || end === "") {
 
-        alert("Please select Zone and Forecast Date.");
+        alert("Please select Zone, Date, Start Time and End Time.");
 
         return;
 
     }
 
-    try{
+    try {
 
-        const response = await fetch("/forecast/generate",{
+        const response = await fetch("/forecast/generate", {
 
-            method:"POST",
+            method: "POST",
 
-            headers:{
-                "Content-Type":"application/json"
+            headers: {
+                "Content-Type": "application/json"
             },
 
-            body:JSON.stringify({
+            body: JSON.stringify({
 
-                zone_id:zone,
-
-                forecast_date:date
+                zone_id: zone,
+                forecast_date: date,
+                start_time: start,
+                end_time: end
 
             })
 
         });
 
-        if(!response.ok){
+        if (!response.ok) {
 
             const error = await response.json();
 
@@ -277,92 +291,71 @@ document.getElementById("generateBtn").onclick = async function(){
 
         console.log(data);
 
-        // ===========================
+        // -----------------------------
         // Update Table
-        // ===========================
+        // -----------------------------
 
-        document.getElementById("forecastRow").innerHTML = `
+        const tableBody = document.getElementById("forecastTableBody");
 
-            <td>${data.zone_id}</td>
+        tableBody.innerHTML = "";
 
-            <td>${data.predicted_power_kw}</td>
+        data.forecast.forEach(item => {
 
-            <td>${data.max_power_kw}</td>
+            tableBody.innerHTML += `
 
-            <td>${data.min_power_kw}</td>
+                <tr>
 
-            <td>${data.house_count}</td>
+                    <td>${item.time}</td>
 
-            <td>${data.utilization_percent}%</td>
+                    <td>${item.predicted_avg_power_kw}</td>
 
-            <td>${data.forecast_date}</td>
+                    <td>${item.utilization_percent}%</td>
 
-        `;
+                </tr>
 
+            `;
 
-        // ===========================
+        });
+
+        // -----------------------------
         // Update Chart
-        // ===========================
+        // -----------------------------
 
-        const ctx =
-            document.getElementById("forecastChart")
+        const ctx = document
+            .getElementById("forecastChart")
             .getContext("2d");
 
-        if(window.forecastChart){
+        if (window.forecastChart) {
 
             window.forecastChart.destroy();
 
         }
 
-        window.forecastChart = new Chart(ctx,{
+        window.forecastChart = new Chart(ctx, {
 
-            type:"line",
+            type: "line",
 
-            data:{
+            data: {
 
-                labels:data.historical_power.map((_,i)=>`Day ${i+1}`),
+                labels: data.forecast.map(item => item.time),
 
-                datasets:[
-
-                    {
-
-                        label:"Historical Power",
-
-                        data:data.historical_power,
-
-                        borderColor:"blue",
-
-                        backgroundColor:"transparent",
-
-                        tension:0.4,
-
-                        fill:false
-
-                    },
+                datasets: [
 
                     {
 
-                        label:"Forecast",
+                        label: "Forecast Power (kW)",
 
-                        data:[
+                        data: data.forecast.map(item => item.predicted_avg_power_kw),
 
-                            ...new Array(data.historical_power.length-1).fill(null),
+                        borderColor: "blue",
 
-                            data.predicted_power_kw
+                        backgroundColor: "rgba(54,162,235,0.2)",
 
-                        ],
+                        fill: true,
 
-                        borderColor:"red",
+                        tension: 0.4,
 
-                        backgroundColor:"transparent",
-
-                        pointRadius:6,
-
-                        pointBackgroundColor:"red",
-
-                        tension:0.4,
-
-                        fill:false
+                        pointRadius: 5
 
                     }
 
@@ -370,15 +363,43 @@ document.getElementById("generateBtn").onclick = async function(){
 
             },
 
-            options:{
+            options: {
 
-                responsive:true,
+                responsive: true,
 
-                plugins:{
+                plugins: {
 
-                    legend:{
+                    legend: {
 
-                        display:true
+                        display: true
+
+                    }
+
+                },
+
+                scales: {
+
+                    x: {
+
+                        title: {
+
+                            display: true,
+
+                            text: "Time"
+
+                        }
+
+                    },
+
+                    y: {
+
+                        title: {
+
+                            display: true,
+
+                            text: "Forecast Power (kW)"
+
+                        }
 
                     }
 
@@ -390,9 +411,9 @@ document.getElementById("generateBtn").onclick = async function(){
 
     }
 
-    catch(error){
+    catch (error) {
 
-        console.log(error);
+        console.error(error);
 
         alert("Unable to generate forecast.");
 
@@ -401,10 +422,5 @@ document.getElementById("generateBtn").onclick = async function(){
 };
 
 </script>
-    
-
 </body>
-
-
 </html>
-

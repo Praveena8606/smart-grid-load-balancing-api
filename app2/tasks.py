@@ -24,6 +24,192 @@ r = redis.Redis(
 
 
 
+# @celery.task
+# def calculate_zone_averages():
+
+#     print("CALCULATING ZONE ANALYTICS...")
+
+#     db = SessionLocal()
+
+#     try:
+
+#         zones = (
+#             db.query(ZoneLoadSummary.zone_id)
+#             .distinct()
+#             .all()
+#         )
+
+#         for zone in zones:
+
+#             zone_id = zone[0]
+
+#             # -------------------------------------------------
+#             # Get latest reading of every unique house
+#             # -------------------------------------------------
+
+#             latest_rows = (
+#                 db.query(ZoneLoadSummary)
+#                 .filter(
+#                     ZoneLoadSummary.zone_id == zone_id
+#                 )
+#                 .order_by(
+#                     ZoneLoadSummary.house_id,
+#                     ZoneLoadSummary.record_time.desc()
+#                 )
+#                 .distinct(ZoneLoadSummary.house_id)
+#                 .all()
+#             )
+
+#             if len(latest_rows) == 0:
+#                 continue
+
+#             # -------------------------------------------------
+#             # Calculate values
+#             # -------------------------------------------------
+
+#             house_count = len(latest_rows)
+
+#             total_power = sum(
+#                 row.avg_power_kw
+#                 for row in latest_rows
+#             )
+
+#             avg_power = (
+#                 total_power / house_count
+#                 if house_count > 0
+#                 else 0
+#             )
+
+#             avg_voltage = (
+#                 sum(
+#                     row.avg_voltage
+#                     for row in latest_rows
+#                 ) / house_count
+#                 if house_count > 0
+#                 else 0
+#             )
+
+#             avg_current = (
+#                 sum(
+#                     row.avg_current
+#                     for row in latest_rows
+#                 ) / house_count
+#                 if house_count > 0
+#                 else 0
+#             )
+
+#             # Every unique house contributes 5 kW
+
+#             total_power_capacity = house_count * 5
+
+#             utilization_percent = (
+#                 (avg_power / total_power_capacity) * 100
+#                 if total_power_capacity > 0
+#                 else 0
+#             )
+
+#             # -------------------------------------------------
+#             # Update / Insert analytics
+#             # -------------------------------------------------
+
+#             existing = (
+#                 db.query(ZoneAnalyticsSummary)
+#                 .filter(
+#                     ZoneAnalyticsSummary.zone_id == zone_id
+#                 )
+#                 .first()
+#             )
+
+#             if existing:
+
+#                 existing.avg_power_kw = avg_power
+#                 existing.avg_voltage = avg_voltage
+#                 existing.avg_current = avg_current
+#                 existing.house_count = house_count
+#                 existing.total_power_capacity = total_power_capacity
+#                 existing.utilization_percent = utilization_percent
+#                 existing.calculated_time = datetime.now(timezone.utc)
+
+#             else:
+
+#                 existing = ZoneAnalyticsSummary(
+
+#                     zone_id=zone_id,
+
+#                     avg_power_kw=avg_power,
+
+#                     avg_voltage=avg_voltage,
+
+#                     avg_current=avg_current,
+
+#                     house_count=house_count,
+
+#                     total_power_capacity=total_power_capacity,
+
+#                     utilization_percent=utilization_percent,
+
+#                     calculated_time=datetime.now(timezone.utc)
+
+#                 )
+
+#                 db.add(existing)
+
+#             db.commit()
+#             db.refresh(existing)
+
+#             # -------------------------------------------------
+#             # Publish Redis Update
+#             # -------------------------------------------------
+
+#             data = {
+
+#                 "type": "grid_update",
+
+#                 "zone_id": existing.zone_id,
+
+#                 "avg_power_kw": round(float(existing.avg_power_kw), 2),
+
+#                 "avg_voltage": round(float(existing.avg_voltage), 2),
+
+#                 "avg_current": round(float(existing.avg_current), 2),
+
+#                 "house_count": existing.house_count,
+
+#                 "total_power_capacity": float(existing.total_power_capacity),
+
+#                 "utilization_percent": round(
+#                     float(existing.utilization_percent), 2
+#                 ),
+
+#                 "calculated_time": existing.calculated_time.strftime(
+#                     "%d-%m-%Y %H:%M:%S"
+#                 )
+
+#             }
+
+#             r.publish(
+#                 "grid_updates",
+#                 json.dumps(data)
+#             )
+
+#             print(f"Published Grid Update -> {zone_id}")
+
+#     except Exception as e:
+
+#         db.rollback()
+
+#         print("Zone Analytics Error:", e)
+
+#     finally:
+
+#         db.close()
+
+#     print("ZONE ANALYTICS COMPLETED")
+
+
+from sqlalchemy import func, and_
+from datetime import datetime, timezone
+
 @celery.task
 def calculate_zone_averages():
 
@@ -43,34 +229,63 @@ def calculate_zone_averages():
 
             zone_id = zone[0]
 
-            # -------------------------------------------------
-            # Get latest reading of every unique house
-            # -------------------------------------------------
+            # -----------------------------------------
+            # Get latest reading for each house
+            # -----------------------------------------
 
-            latest_rows = (
-                db.query(ZoneLoadSummary)
+            latest_subquery = (
+                db.query(
+                    ZoneLoadSummary.house_id,
+                    func.max(ZoneLoadSummary.record_time).label("latest_time")
+                )
                 .filter(
                     ZoneLoadSummary.zone_id == zone_id
                 )
-                .order_by(
-                    ZoneLoadSummary.house_id,
-                    ZoneLoadSummary.record_time.desc()
+                .group_by(
+                    ZoneLoadSummary.house_id
                 )
-                .distinct(ZoneLoadSummary.house_id)
+                .subquery()
+            )
+
+            latest_rows = (
+                db.query(ZoneLoadSummary)
+                .join(
+                    latest_subquery,
+                    and_(
+                        ZoneLoadSummary.house_id == latest_subquery.c.house_id,
+                        ZoneLoadSummary.record_time == latest_subquery.c.latest_time
+                    )
+                )
+                .filter(
+                    ZoneLoadSummary.zone_id == zone_id
+                )
                 .all()
             )
 
-            if len(latest_rows) == 0:
+            if not latest_rows:
                 continue
 
-            # -------------------------------------------------
+            # -----------------------------------------
+            # Debug
+            # -----------------------------------------
+
+            print(f"\nZone : {zone_id}")
+
+            for row in latest_rows:
+                print(
+                    row.house_id,
+                    row.avg_power_kw,
+                    row.record_time
+                )
+
+            # -----------------------------------------
             # Calculate values
-            # -------------------------------------------------
+            # -----------------------------------------
 
             house_count = len(latest_rows)
 
             total_power = sum(
-                row.total_power_kw
+                row.avg_power_kw
                 for row in latest_rows
             )
 
@@ -81,24 +296,18 @@ def calculate_zone_averages():
             )
 
             avg_voltage = (
-                sum(
-                    row.avg_voltage
-                    for row in latest_rows
-                ) / house_count
+                sum(row.avg_voltage for row in latest_rows)
+                / house_count
                 if house_count > 0
                 else 0
             )
 
             avg_current = (
-                sum(
-                    row.avg_current
-                    for row in latest_rows
-                ) / house_count
+                sum(row.avg_current for row in latest_rows)
+                / house_count
                 if house_count > 0
                 else 0
             )
-
-            # Every unique house contributes 5 kW
 
             total_power_capacity = house_count * 5
 
@@ -108,9 +317,9 @@ def calculate_zone_averages():
                 else 0
             )
 
-            # -------------------------------------------------
-            # Update / Insert analytics
-            # -------------------------------------------------
+            # -----------------------------------------
+            # Update / Insert Analytics
+            # -----------------------------------------
 
             existing = (
                 db.query(ZoneAnalyticsSummary)
@@ -133,23 +342,14 @@ def calculate_zone_averages():
             else:
 
                 existing = ZoneAnalyticsSummary(
-
                     zone_id=zone_id,
-
                     avg_power_kw=avg_power,
-
                     avg_voltage=avg_voltage,
-
                     avg_current=avg_current,
-
                     house_count=house_count,
-
                     total_power_capacity=total_power_capacity,
-
                     utilization_percent=utilization_percent,
-
                     calculated_time=datetime.now(timezone.utc)
-
                 )
 
                 db.add(existing)
@@ -157,34 +357,24 @@ def calculate_zone_averages():
             db.commit()
             db.refresh(existing)
 
-            # -------------------------------------------------
+            # -----------------------------------------
             # Publish Redis Update
-            # -------------------------------------------------
+            # -----------------------------------------
 
             data = {
-
                 "type": "grid_update",
-
                 "zone_id": existing.zone_id,
-
                 "avg_power_kw": round(float(existing.avg_power_kw), 2),
-
                 "avg_voltage": round(float(existing.avg_voltage), 2),
-
                 "avg_current": round(float(existing.avg_current), 2),
-
                 "house_count": existing.house_count,
-
                 "total_power_capacity": float(existing.total_power_capacity),
-
                 "utilization_percent": round(
                     float(existing.utilization_percent), 2
                 ),
-
                 "calculated_time": existing.calculated_time.strftime(
                     "%d-%m-%Y %H:%M:%S"
                 )
-
             }
 
             r.publish(
@@ -197,7 +387,6 @@ def calculate_zone_averages():
     except Exception as e:
 
         db.rollback()
-
         print("Zone Analytics Error:", e)
 
     finally:
@@ -205,7 +394,7 @@ def calculate_zone_averages():
         db.close()
 
     print("ZONE ANALYTICS COMPLETED")
-
+    
 # ==========================================
 # ZONE ALERTS
 # ==========================================
@@ -299,7 +488,7 @@ def check_zone_alerts():
 #             zone_id = zone[0]
 
 #             avg_power = (
-#                 db.query(func.avg(ZoneLoadSummary.total_power_kw))
+#                 db.query(func.avg(ZoneLoadSummary.avg_power_kw))
 #                 .filter(
 #                     ZoneLoadSummary.zone_id == zone_id
 #                 )

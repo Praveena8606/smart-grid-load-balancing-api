@@ -13,7 +13,7 @@ class ZoneLoadSummary(Base):
 
     house_id = Column(String(50))
 
-    total_power_kw = Column(Float)
+    avg_power_kw = Column(Float)
 
     avg_voltage = Column(Float)
 
@@ -23,12 +23,11 @@ class ZoneLoadSummary(Base):
 
 
 class ZoneAnalyticsSummary(Base):
-
     __tablename__ = "zone_analytics_summary"
 
     id = Column(Integer, primary_key=True)
 
-    zone_id = Column(String(50), unique=True)
+    zone_id = Column(String)
 
     avg_power_kw = Column(Float)
 
@@ -73,7 +72,7 @@ class ForecastAlertTable(Base):
 
     forecast_time = Column(DateTime)
 
-    predicted_power_kw = Column(Float)
+    predicted_avg_power_kw = Column(Float)
 
     alert_message = Column(String)
 
@@ -114,6 +113,6 @@ class ZoneForecast(Base):
 
     forecast_time = Column(DateTime)
 
-    predicted_power_kw = Column(Float)
+    predicted_avg_power_kw = Column(Float)
 
     created_time = Column(DateTime)

@@ -5,10 +5,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import RedirectResponse
 from app.routers import websocket
 import asyncio
-from app.routers import forecast
 from app.redis_listener import redis_listener
-import app.routers.forecast as forecast
-from app.routers import forecast
 from app.routers import (
     zone_load,
     analytics,

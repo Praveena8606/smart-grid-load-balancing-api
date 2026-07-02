@@ -4,13 +4,19 @@ from datetime import datetime
 from datetime import date
 
 class ForecastRequest(BaseModel):
-    zone_id: str
-    forecast_date: date
+
+    zone_id:str
+
+    forecast_date:date
+
+    start_time:str
+
+    end_time:str
 
 class ForecastResponse(BaseModel):
     zone_id: str
     forecast_date: date
-    predicted_power_kw: float
+    predicted_avg_power_kw: float
     avg_power_kw: float
     max_power_kw: float
     min_power_kw: float
@@ -18,20 +24,21 @@ class ForecastResponse(BaseModel):
     utilization_percent: float
     historical_power: list[float]
 
+
 class ZoneLoadCreate(BaseModel):
     zone_id: str
     house_id: str
-    total_power_kw: float
+    avg_power_kw: float
     avg_voltage: float
     avg_current: float
-    record_time: datetime
+    record_time: datetime    
 
 
 class ZoneLoadResponse(BaseModel):
     id: int
     zone_id: str
     house_id: str
-    total_power_kw: float
+    avg_power_kw: float
     avg_voltage: float
     avg_current: float
     record_time: datetime
@@ -59,7 +66,7 @@ class ForecastAlertResponse(BaseModel):
     id: int
     zone_id: str
     forecast_time: datetime
-    predicted_power_kw: float
+    predicted_avg_power_kw: float
     alert_message: str
     created_time: datetime
 
@@ -79,7 +86,7 @@ class ZoneAnalyticsResponse(BaseModel):
     calculated_time: datetime
 
     class Config:
-        from_attributes = True        
+        from_attributes = True       
 
 
 
