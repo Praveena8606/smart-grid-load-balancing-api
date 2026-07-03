@@ -1,110 +1,195 @@
-from fastapi import APIRouter, Depends
-from sqlalchemy.orm import Session
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 
-from app.database import SessionLocal
+from app.database import get_db
 from app.models import ZoneLoadSummary
+from app.schemas import (
+    ZoneLoadCreate,
+    ZoneLoadResponse
+)
 
-router = APIRouter()
+router = APIRouter(
+    prefix="/zone-load",
+    tags=["Zone Load"]
+)
 
 
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-
+# ==========================================
+# TEST API
+# ==========================================
 
 @router.get("/test")
-def test():
+async def test():
     return {
-        "message": "zone load router working"
+        "message": "Zone Load Router Working Successfully"
     }
 
 
-@router.post("/")
-def create_zone_load(
-    data: dict,
-    db: Session = Depends(get_db)
+# ==========================================
+# INSERT NEW RECORD
+# ==========================================
+
+@router.post(
+    "/",
+    response_model=ZoneLoadResponse,
+    status_code=201
+)
+async def create_zone_load(
+    data: ZoneLoadCreate,
+    db: AsyncSession = Depends(get_db)
 ):
-    try:
 
-        row = ZoneLoadSummary(
-            zone_id=data["zone_id"],
-            house_id=data["house_id"],
-            total_power_kw=data["total_power_kw"],
-            avg_voltage=data["avg_voltage"],
-            avg_current=data["avg_current"],
-            record_time=data["record_time"]
-        )
-
-        db.add(row)
-        db.commit()
-        db.refresh(row)
-
-        return {
-            "message": "Inserted Successfully",
-            "id": row.id
-        }
-
-    except Exception as e:
-
-        db.rollback()
-
-        return {
-            "status": "error",
-            "message": str(e)
-        }
-
-
-@router.get("/")
-def get_zone_loads(
-    db: Session = Depends(get_db)
-):
-    return db.query(
-        ZoneLoadSummary
-    ).all()
-
-
-@router.get("/{zone_id}")
-def get_zone(
-    zone_id: str,
-    db: Session = Depends(get_db)
-):
-    return (
-        db.query(ZoneLoadSummary)
-        .filter(
-            ZoneLoadSummary.zone_id == zone_id
-        )
-        .all()
+    row = ZoneLoadSummary(
+        zone_id=data.zone_id,
+        house_id=data.house_id,
+        avg_power_kw=data.avg_power_kw,
+        avg_voltage=data.avg_voltage,
+        avg_current=data.avg_current,
+        record_time=data.record_time
     )
 
+    db.add(row)
 
-@router.get("/{zone_id}/latest")
-def get_latest_zone_record(
-    zone_id: str,
-    db: Session = Depends(get_db)
+    await db.commit()
+
+    await db.refresh(row)
+
+    return row
+
+
+# ==========================================
+# GET ALL RECORDS
+# ==========================================
+
+@router.get(
+    "/",
+    response_model=list[ZoneLoadResponse]
+)
+async def get_zone_loads(
+    db: AsyncSession = Depends(get_db)
 ):
-    return (
-        db.query(ZoneLoadSummary)
-        .filter(
-            ZoneLoadSummary.zone_id == zone_id
-        )
+
+    result = await db.execute(
+
+        select(ZoneLoadSummary)
+
         .order_by(
             ZoneLoadSummary.record_time.desc()
         )
-        .first()
+
     )
 
+    return result.scalars().all()
 
-@router.get("/latest/all")
-def get_latest(
-    db: Session = Depends(get_db)
+
+# ==========================================
+# GET RECORDS BY ZONE
+# ==========================================
+
+@router.get(
+    "/{zone_id}",
+    response_model=list[ZoneLoadResponse]
+)
+async def get_zone(
+    zone_id: str,
+    db: AsyncSession = Depends(get_db)
 ):
-    return (
-        db.query(ZoneLoadSummary)
+
+    result = await db.execute(
+
+        select(ZoneLoadSummary)
+
+        .where(
+            ZoneLoadSummary.zone_id == zone_id
+        )
+
         .order_by(
             ZoneLoadSummary.record_time.desc()
         )
-        .first()
+
     )
+
+    rows = result.scalars().all()
+
+    if not rows:
+
+        raise HTTPException(
+            status_code=404,
+            detail="Zone not found"
+        )
+
+    return rows
+
+
+# ==========================================
+# GET LATEST RECORD OF ZONE
+# ==========================================
+
+@router.get(
+    "/{zone_id}/latest",
+    response_model=ZoneLoadResponse
+)
+async def get_latest_zone_record(
+    zone_id: str,
+    db: AsyncSession = Depends(get_db)
+):
+
+    result = await db.execute(
+
+        select(ZoneLoadSummary)
+
+        .where(
+            ZoneLoadSummary.zone_id == zone_id
+        )
+
+        .order_by(
+            ZoneLoadSummary.record_time.desc()
+        )
+
+    )
+
+    row = result.scalars().first()
+
+    if row is None:
+
+        raise HTTPException(
+            status_code=404,
+            detail="Zone not found"
+        )
+
+    return row
+
+
+# ==========================================
+# GET LATEST RECORD OF ALL ZONES
+# ==========================================
+
+@router.get(
+    "/latest/all",
+    response_model=ZoneLoadResponse
+)
+async def get_latest(
+    db: AsyncSession = Depends(get_db)
+):
+
+    result = await db.execute(
+
+        select(ZoneLoadSummary)
+
+        .order_by(
+            ZoneLoadSummary.record_time.desc()
+        )
+
+    )
+
+    row = result.scalars().first()
+
+    if row is None:
+
+        raise HTTPException(
+            status_code=404,
+            detail="No records found"
+        )
+
+    return row
