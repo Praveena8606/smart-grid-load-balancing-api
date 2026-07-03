@@ -83,33 +83,7 @@ def get_dashboard(db: Session = Depends(get_db)):
         "average_usage": round(average_usage, 2)
     }
 
-@router.get("/dashboard")
-def get_dashboard(db: Session = Depends(get_db)):
-    loads = db.query(Load).all()
 
-    total_sectors = len(loads)
-
-    overloaded_sectors = 0
-    total_usage = 0
-
-    for load in loads:
-        usage_percent = (load.current_load / load.max_capacity) * 100
-
-        total_usage += usage_percent
-
-        if usage_percent > 90:
-            overloaded_sectors += 1
-
-    average_usage = 0
-
-    if total_sectors > 0:
-        average_usage = total_usage / total_sectors
-
-    return {
-        "total_sectors": total_sectors,
-        "overloaded_sectors": overloaded_sectors,
-        "average_usage": round(average_usage, 2)
-    }
 
 @router.get("/grid-status")
 def get_grid_status(db: Session = Depends(get_db)):

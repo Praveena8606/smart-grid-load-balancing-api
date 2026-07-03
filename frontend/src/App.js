@@ -1,24 +1,26 @@
 import React, { useEffect, useState } from "react";
-import API from "./api/api";
+import API from "./api/api.js";
 
 function App() {
-const [loads, setLoads] = useState([]);
-const [dashboard, setDashboard] = useState({});
-const [gridStatus, setGridStatus] = useState({});
-const [alerts, setAlerts] = useState([]);
-const [predictions, setPredictions] = useState([]);
-const [recommendations, setRecommendations] = useState([]);
+
+  console.log("NEW APP IS RUNNING");
+
+  const [loads, setLoads] = useState([]);
+  const [dashboard, setDashboard] = useState({});
+  const [gridStatus, setGridStatus] = useState({});
+  const [alerts, setAlerts] = useState([]);
+  const [predictions, setPredictions] = useState([]);
+  const [recommendations, setRecommendations] = useState([]);
 useEffect(() => {
 
   API.get("/loads")
-    .then((response) => {
-      console.log("DATA:", response.data);
-      setLoads(response.data);
-    })
-    .catch((error) => {
-      console.error(error);
-    });
-
+  .then((response) => {
+    console.log("LOADS DATA:", response.data);
+    setLoads(response.data);
+  })
+  .catch((error) => {
+    console.error("LOADS ERROR:", error);
+  });
   API.get("/dashboard")
     .then((response) => {
       console.log("Dashboard:", response.data);
