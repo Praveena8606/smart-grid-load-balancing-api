@@ -4,14 +4,9 @@ from datetime import datetime
 from datetime import date
 
 class ForecastRequest(BaseModel):
-
-    zone_id:str
-
-    forecast_date:date
-
-    start_time:str
-
-    end_time:str
+    zone_id: str
+    forecast_date: date
+    start_time: str
 
 class ForecastResponse(BaseModel):
     zone_id: str

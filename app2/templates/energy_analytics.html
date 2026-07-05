@@ -9,29 +9,33 @@
 
     <style>
 
-        body{
+    body{
 
-    font-family:Arial,sans-serif;
-
-    background:#f5f5f5;
-
+    font-family: Arial, Helvetica, sans-serif;
+    background:#f4f6f9;
     margin:0;
-
-    padding:30px;
+    padding:20px;
 
 }
 
 .container{
 
     width:95%;
-
     max-width:1200px;
-
     margin:auto;
+    background:#ffffff;
+    padding:30px;
+    border-radius:10px;
+    box-shadow:0 4px 12px rgba(0,0,0,0.15);
 
 }
+h1{
+    text-align:center;
+    color:#1f4e79;
+    margin-bottom:30px;
+}
 
-        #connectionStatus{
+#connectionStatus{
             width:250px;
             padding:20px;
             text-align:center;
@@ -41,30 +45,78 @@
             background:red;
             border-radius:10px;
             box-shadow:0 2px 10px rgba(0,0,0,.2);
-        }
+            width:220px;
+            margin-bottom:25px;
+}
 
-        table{
+table{
 
     width:100%;
-
     border-collapse:collapse;
 
+}
+
+label{
+    display:block;
+    font-size:16px;
+    font-weight:bold;
+    margin-bottom:8px;
+    color:#333;
+    cursor:pointer;
+}
+
+select,
+input[type="date"],
+input[type="time"]{
+    width:25%;
+    padding:10px 12px;
+    font-size:15px;
+    border: 2px solid #000000;
+    border-radius:6px;
+    box-sizing:border-box;
+    transition:0.3s;
+    cursor:pointer;
+}
+
+select:focus,
+input:focus{
+    outline:none;
+    border: 2px solid #000000;   
+}    
+
+#generateBtn{
+    width:25%;
+    padding:12px;
+    font-size:16px;
+    font-weight:bold;
+    background:#1f4e79;
+    color:white;
+    border:none;
+    border-radius:6px;
+    cursor:pointer;
+    transition:0.3s;
+}
+
+#generateBtn:hover{
+    background:#17497a;
+    color: #000000;
+}
+
+#generateBtn:active{
+    transform:scale(.98);
 }
 
 th,td{
 
     border:1px solid #ddd;
-
     padding:10px;
-
     text-align:center;
 
 }
 
 th{
 
-    background:#1976d2;
-
+    background:#1f4e79;
     color:white;
 
 }
@@ -78,92 +130,96 @@ th{
 
     <div class="container">
 
-    <h1>ENERGY ANALYTICS DASHBOARD</h1>
+        <!-- Page Title -->
+        <h1>ENERGY ANALYTICS DASHBOARD</h1>
 
-    <div id="connectionStatus">
-        Connecting...
+        <!-- Connection Status -->
+        <div id="connectionStatus">
+            Connecting...
+        </div>
+
+        <br><br>
+
+        <!-- Zone Selection -->
+        <div>
+            <label for="zoneSelect"><b>Select Zone</b></label><br>
+            <select id="zoneSelect">
+                <!-- <option value="" disabled>Select zone</option> -->
+                <option value="ZONE_01">ZONE_01</option>
+                <option value="ZONE_02">ZONE_02</option>
+                <option value="ZONE_03">ZONE_03</option>
+                <option value="ZONE_04">ZONE_04</option>
+                <option value="ZONE_05">ZONE_05</option>
+                <option value="ZONE_06">ZONE_06</option>
+                <option value="ZONE_07">ZONE_07</option>
+                <option value="ZONE_08">ZONE_08</option>
+                <option value="ZONE_09">ZONE_09</option>
+                <option value="ZONE_10">ZONE_10</option>
+            </select>
+        </div>
+
+        <br><br>
+
+        <!-- Forecast Date -->
+        <div>
+            <label for="forecastDate"><b>Select Forecast Date</b></label><br>
+            <input type="date" id="forecastDate">
+        </div>
+
+        <br><br>
+
+        <!-- Start Time -->
+        <div>
+            <label for="startTime"><b>Start Time</b></label><br>
+            <input type="time" id="startTime" step="300">
+        </div>
+
+        <br><br>
+
+        <!-- Generate Button -->
+        <button id="generateBtn">
+            Generate Forecast
+        </button>
+
+        <br><br>
+
+        <!-- Forecast Result -->
+        <h2>Forecast Result</h2>
+
+        <table>
+
+            <thead>
+                <tr>
+                    <th>Forecast Date</th>
+                    <th>Time</th>
+                    <th>Forecast Avg Power (kW)</th>
+                    <th>Forecast Total Power (kW)</th>
+                    <th>Avg Voltage (V)</th>
+                    <th>Avg Current (A)</th>
+                    <th>Utilization (%)</th>
+                </tr>
+            </thead>
+
+            <tbody id="forecastTableBody">
+                <tr>
+                    <td colspan="6">
+                        No Forecast Generated
+                    </td>
+                </tr>
+            </tbody>
+
+        </table>
+
+        <br><br>
+
+       <h2 style="color: black;">Forecast Utilization Graph</h2>
+
+        <canvas id="utilizationChart"
+            width="900"
+            height="350">
+        </canvas>
+
     </div>
-
-    <br><br>
-
-    <label><b>Select Zone</b></label>
-
-    <select id="zoneSelect">
-        <option value="">Select Zone</option>
-        <option value="ZONE_01">ZONE_01</option>
-        <option value="ZONE_02">ZONE_02</option>
-        <option value="ZONE_03">ZONE_03</option>
-        <option value="ZONE_04">ZONE_04</option>
-        <option value="ZONE_05">ZONE_05</option>
-        <option value="ZONE_06">ZONE_06</option>
-        <option value="ZONE_07">ZONE_07</option>
-        <option value="ZONE_08">ZONE_08</option>
-        <option value="ZONE_09">ZONE_09</option>
-        <option value="ZONE_10">ZONE_10</option>
-    </select>
-
-    <br><br>
-
-    <label><b>Select Forecast Date</b></label>
-<input type="date" id="forecastDate">
-
-<br><br>
-
-<label><b>Start Time</b></label>
-<input type="time" id="startTime" step="300">
-
-&nbsp;&nbsp;&nbsp;
-
-<label><b>End Time</b></label>
-<input type="time" id="endTime" step="300">
-
-    <br><br>
-
-    <button id="generateBtn">
-        Generate Forecast
-    </button>
-
-    <br><br>
-
-<table>
-
-<thead>
-
-<tr>
-
-<th>Time</th>
-<th>Forecast Power (kW)</th>
-<th>Utilization (%)</th>
-
-</tr>
-
-</thead>
-
-<tbody id="forecastTableBody">
-
-<tr>
-
-<td colspan="3">
-
-No Forecast Generated
-
-</td>
-
-</tr>
-
-</tbody>
-
-</table>
-
-    <br><br>
-
-    <canvas
-        id="forecastChart"
-        width="900"
-        height="350">
-    </canvas>
-
-</div>
 
 
 <script>
@@ -182,33 +238,23 @@ function connectSocket() {
     const socket = new WebSocket("ws://127.0.0.1:8000/ws/forecast");
 
     socket.onopen = function () {
-
         console.log("Forecast WebSocket Connected");
-
         status.innerHTML = "🟢 Connected";
         status.style.background = "green";
-
     };
 
-    socket.onmessage = function(event){
-
+    socket.onmessage = function (event) {
         console.log("Received:", event.data);
-
     };
 
-    socket.onerror = function(error){
-
-        console.log(error);
-
+    socket.onerror = function (error) {
+        console.error("WebSocket Error:", error);
     };
 
-    socket.onclose = function(){
-
+    socket.onclose = function () {
         status.innerHTML = "🔴 Disconnected";
         status.style.background = "red";
-
-        setTimeout(connectSocket,3000);
-
+        setTimeout(connectSocket, 3000);
     };
 
 }
@@ -223,7 +269,7 @@ connectSocket();
 const today = new Date();
 const maxDate = new Date();
 
-maxDate.setDate(today.getDate()+30);
+maxDate.setDate(today.getDate() + 30);
 
 document.getElementById("forecastDate").min =
 today.toISOString().split("T")[0];
@@ -232,33 +278,24 @@ document.getElementById("forecastDate").max =
 maxDate.toISOString().split("T")[0];
 
 
-
-
-
-
 // ==========================================
 // Generate Forecast
 // ==========================================
-
 
 document.getElementById("generateBtn").onclick = async function () {
 
     const zone = document.getElementById("zoneSelect").value;
     const date = document.getElementById("forecastDate").value;
     const start = document.getElementById("startTime").value;
-    const end = document.getElementById("endTime").value;
 
-    if (zone === "" || date === "" || start === "" || end === "") {
-
-        alert("Please select Zone, Date, Start Time and End Time.");
-
+    if (!zone || !date || !start) {
+        alert("Please select Zone, Date and Start Time.");
         return;
-
     }
 
     try {
 
-        const response = await fetch("/forecast/generate", {
+        const response = await fetch("http://127.0.0.1:8000/forecast/generate", {
 
             method: "POST",
 
@@ -270,8 +307,7 @@ document.getElementById("generateBtn").onclick = async function () {
 
                 zone_id: zone,
                 forecast_date: date,
-                start_time: start,
-                end_time: end
+                start_time: start
 
             })
 
@@ -279,10 +315,9 @@ document.getElementById("generateBtn").onclick = async function () {
 
         if (!response.ok) {
 
-            const error = await response.json();
-
-            alert(error.detail);
-
+            const text = await response.text();
+            console.error(text);
+            alert(text);
             return;
 
         }
@@ -291,81 +326,98 @@ document.getElementById("generateBtn").onclick = async function () {
 
         console.log(data);
 
-        // -----------------------------
-        // Update Table
-        // -----------------------------
+        if (!data.forecast || data.forecast.length === 0) {
+
+            alert("No Forecast Data Received");
+            return;
+
+        }
+
+        // ==========================================
+        // Update Forecast Table
+        // ==========================================
 
         const tableBody = document.getElementById("forecastTableBody");
-
         tableBody.innerHTML = "";
 
         data.forecast.forEach(item => {
 
             tableBody.innerHTML += `
-
                 <tr>
-
+                    <td>${data.forecast_date}</td>
                     <td>${item.time}</td>
-
                     <td>${item.predicted_avg_power_kw}</td>
-
+                    <td>${item.predicted_total_power_kw}</td>
+                    <td>${item.avg_voltage}</td>
+                    <td>${item.avg_current}</td>
                     <td>${item.utilization_percent}%</td>
-
                 </tr>
-
             `;
 
         });
 
-        // -----------------------------
-        // Update Chart
-        // -----------------------------
+        // ==========================================
+        // Prepare Chart Data
+        // ==========================================
 
-        const ctx = document
-            .getElementById("forecastChart")
-            .getContext("2d");
+        const labels = data.forecast.map(item => item.time);
 
-        if (window.forecastChart) {
+        const values = data.forecast.map(item =>
+            Number(item.utilization_percent)
+        );
 
-            window.forecastChart.destroy();
+        console.log(labels);
+        console.log(values);
 
+        // ==========================================
+        // Utilization Chart
+        // ==========================================
+
+        const canvas = document.getElementById("utilizationChart");
+
+        const ctx = canvas.getContext("2d");
+
+        if (window.utilizationChart &&
+            typeof window.utilizationChart.destroy === "function" 
+        ) {
+            window.utilizationChart.destroy();
         }
 
-        window.forecastChart = new Chart(ctx, {
+        window.utilizationChart = new Chart(ctx, {
 
             type: "line",
 
             data: {
 
-                labels: data.forecast.map(item => item.time),
+                labels: labels,
 
-                datasets: [
+                datasets: [{
 
-                    {
+                    label: "Forecast Utilization %",
 
-                        label: "Forecast Power (kW)",
+                    data: values,
 
-                        data: data.forecast.map(item => item.predicted_avg_power_kw),
+                    borderColor: "red",
 
-                        borderColor: "blue",
+                    backgroundColor: "rgba(255,99,132,0.2)",
 
-                        backgroundColor: "rgba(54,162,235,0.2)",
+                    borderWidth: 3,
 
-                        fill: true,
+                    fill: false,
 
-                        tension: 0.4,
+                    pointRadius: 4,
 
-                        pointRadius: 5
+                    tension: 0.4
 
-                    }
-
-                ]
+                }]
 
             },
 
             options: {
 
                 responsive: true,
+
+                animation: false,
 
                 plugins: {
 
@@ -393,11 +445,15 @@ document.getElementById("generateBtn").onclick = async function () {
 
                     y: {
 
+                        beginAtZero: true,
+
+                        suggestedMax: 100,
+
                         title: {
 
                             display: true,
 
-                            text: "Forecast Power (kW)"
+                            text: "Utilization (%)"
 
                         }
 
@@ -422,5 +478,6 @@ document.getElementById("generateBtn").onclick = async function () {
 };
 
 </script>
+    
 </body>
 </html>

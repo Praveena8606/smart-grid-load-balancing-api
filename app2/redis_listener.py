@@ -1,3 +1,4 @@
+import os
 import json
 import asyncio
 import redis
@@ -5,15 +6,23 @@ import redis
 from app.websocket_manager import manager
 
 
+# ==========================================
 # Redis Connection
+# ==========================================
+
+REDIS_HOST = os.getenv("REDIS_HOST", "localhost")
+REDIS_PORT = int(os.getenv("REDIS_PORT", 6379))
+
 redis_client = redis.Redis(
-    host="localhost",
-    port=6379,
+    host=REDIS_HOST,
+    port=REDIS_PORT,
     decode_responses=True
 )
 
+# ==========================================
+# Subscribe Channels
+# ==========================================
 
-# Pub/Sub
 pubsub = redis_client.pubsub()
 
 pubsub.subscribe(
@@ -21,6 +30,12 @@ pubsub.subscribe(
     "forecast_updates"
 )
 
+print("Subscribed to Redis Channels")
+
+
+# ==========================================
+# Redis Listener
+# ==========================================
 
 async def redis_listener():
 
@@ -28,24 +43,28 @@ async def redis_listener():
 
     while True:
 
-        message = pubsub.get_message(ignore_subscribe_messages=True)
+        try:
 
-        if message:
+            message = pubsub.get_message(
+                ignore_subscribe_messages=True
+            )
 
-            try:
+            if message:
 
                 data = json.loads(message["data"])
 
-                if message["channel"] == "grid_updates":
+                channel = message["channel"]
+
+                if channel == "grid_updates":
 
                     await manager.broadcast_grid(data)
 
-                elif message["channel"] == "forecast_updates":
+                elif channel == "forecast_updates":
 
                     await manager.broadcast_forecast(data)
 
-            except Exception as e:
+        except Exception as e:
 
-                print("Redis Listener Error :", e)
+            print("Redis Listener Error:", e)
 
         await asyncio.sleep(0.1)

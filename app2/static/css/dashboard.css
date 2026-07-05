@@ -1,9 +1,45 @@
+
 *{
     margin:0;
     padding:0;
     box-sizing:border-box;
     font-family:Arial;
 }
+
+.notification-item{
+
+    padding:14px;
+
+    border-bottom:1px solid #e6e6e6;
+
+    text-align:center;
+
+    line-height:1.4;
+
+    transition:.25s;
+
+    font-size:15px;
+}
+
+.notification-item:hover{
+
+    background:#f5f9ff;
+
+}
+
+.notification-list::-webkit-scrollbar{
+
+    width:6px;
+
+}
+
+.notification-list::-webkit-scrollbar-thumb{
+
+    background:#b5b5b5;
+    border-radius:10px;
+
+}
+
 
 body{
 
@@ -93,5 +129,107 @@ button{
 button:hover{
 
     background:#0d47a1;
+
+}
+
+.top-bar{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:20px;
+}
+
+.notification{
+    position:relative;
+    display:flex;
+    align-items:center;
+}
+
+#bellBtn{
+    width:50px;
+    height:50px;
+
+    border:none;
+    border-radius:50%;
+
+    background:#ffffff;
+
+    font-size:26px;
+    cursor:pointer;
+
+    box-shadow:0 3px 10px rgba(0,0,0,.18);
+
+    transition:.3s;
+}
+
+#bellBtn:hover{
+    transform:scale(1.08);
+    background:#f5f5f5;
+}
+
+#badge{
+
+    position:absolute;
+
+    top:-3px;
+    right:-3px;
+
+    width:20px;
+    height:20px;
+
+    border-radius:50%;
+
+    background:#ff2d2d;
+
+    color:#fff;
+
+    display:flex;
+    justify-content:center;
+    align-items:center;
+
+    font-size:11px;
+    font-weight:bold;
+
+    border:2px solid white;
+}
+
+
+.notification-list{
+
+    display:none;
+
+    position:absolute;
+
+    top:60px;
+    right:0;
+
+    width:320px;
+
+    max-height:420px;
+
+    overflow-y:auto;
+
+    background:white;
+
+    border-radius:12px;
+
+    box-shadow:0 8px 25px rgba(0,0,0,.2);
+
+    z-index:999;
+
+    animation:fadeIn .25s ease;
+}
+
+@keyframes fadeIn{
+
+    from{
+        opacity:0;
+        transform:translateY(-10px);
+    }
+
+    to{
+        opacity:1;
+        transform:translateY(0);
+    }
 
 }

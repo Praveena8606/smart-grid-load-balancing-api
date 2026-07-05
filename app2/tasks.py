@@ -1,214 +1,27 @@
-from sqlalchemy import func, text
-from datetime import datetime, timezone
-import asyncio
-from app.websocket_manager import manager
-from app.database import SessionLocal
-from app.celery_app import celery
+import os
 import json
 import redis
+
+from datetime import datetime, timezone,timedelta
+from sqlalchemy import func, and_
+
+from app.database import SessionLocal
+from app.celery_app import celery
 
 from app.models import (
     ZoneLoadSummary,
     ZoneAnalyticsSummary,
-    AlertTable,
-    ForecastAnalytics,
-    ForecastAlertTable,
-    ZoneForecast
+    AlertTable
 )
 
+REDIS_HOST = os.getenv("REDIS_HOST", "localhost")
+
 r = redis.Redis(
-    host="localhost",
+    host=REDIS_HOST,
     port=6379,
     decode_responses=True
 )
 
-
-
-# @celery.task
-# def calculate_zone_averages():
-
-#     print("CALCULATING ZONE ANALYTICS...")
-
-#     db = SessionLocal()
-
-#     try:
-
-#         zones = (
-#             db.query(ZoneLoadSummary.zone_id)
-#             .distinct()
-#             .all()
-#         )
-
-#         for zone in zones:
-
-#             zone_id = zone[0]
-
-#             # -------------------------------------------------
-#             # Get latest reading of every unique house
-#             # -------------------------------------------------
-
-#             latest_rows = (
-#                 db.query(ZoneLoadSummary)
-#                 .filter(
-#                     ZoneLoadSummary.zone_id == zone_id
-#                 )
-#                 .order_by(
-#                     ZoneLoadSummary.house_id,
-#                     ZoneLoadSummary.record_time.desc()
-#                 )
-#                 .distinct(ZoneLoadSummary.house_id)
-#                 .all()
-#             )
-
-#             if len(latest_rows) == 0:
-#                 continue
-
-#             # -------------------------------------------------
-#             # Calculate values
-#             # -------------------------------------------------
-
-#             house_count = len(latest_rows)
-
-#             total_power = sum(
-#                 row.avg_power_kw
-#                 for row in latest_rows
-#             )
-
-#             avg_power = (
-#                 total_power / house_count
-#                 if house_count > 0
-#                 else 0
-#             )
-
-#             avg_voltage = (
-#                 sum(
-#                     row.avg_voltage
-#                     for row in latest_rows
-#                 ) / house_count
-#                 if house_count > 0
-#                 else 0
-#             )
-
-#             avg_current = (
-#                 sum(
-#                     row.avg_current
-#                     for row in latest_rows
-#                 ) / house_count
-#                 if house_count > 0
-#                 else 0
-#             )
-
-#             # Every unique house contributes 5 kW
-
-#             total_power_capacity = house_count * 5
-
-#             utilization_percent = (
-#                 (avg_power / total_power_capacity) * 100
-#                 if total_power_capacity > 0
-#                 else 0
-#             )
-
-#             # -------------------------------------------------
-#             # Update / Insert analytics
-#             # -------------------------------------------------
-
-#             existing = (
-#                 db.query(ZoneAnalyticsSummary)
-#                 .filter(
-#                     ZoneAnalyticsSummary.zone_id == zone_id
-#                 )
-#                 .first()
-#             )
-
-#             if existing:
-
-#                 existing.avg_power_kw = avg_power
-#                 existing.avg_voltage = avg_voltage
-#                 existing.avg_current = avg_current
-#                 existing.house_count = house_count
-#                 existing.total_power_capacity = total_power_capacity
-#                 existing.utilization_percent = utilization_percent
-#                 existing.calculated_time = datetime.now(timezone.utc)
-
-#             else:
-
-#                 existing = ZoneAnalyticsSummary(
-
-#                     zone_id=zone_id,
-
-#                     avg_power_kw=avg_power,
-
-#                     avg_voltage=avg_voltage,
-
-#                     avg_current=avg_current,
-
-#                     house_count=house_count,
-
-#                     total_power_capacity=total_power_capacity,
-
-#                     utilization_percent=utilization_percent,
-
-#                     calculated_time=datetime.now(timezone.utc)
-
-#                 )
-
-#                 db.add(existing)
-
-#             db.commit()
-#             db.refresh(existing)
-
-#             # -------------------------------------------------
-#             # Publish Redis Update
-#             # -------------------------------------------------
-
-#             data = {
-
-#                 "type": "grid_update",
-
-#                 "zone_id": existing.zone_id,
-
-#                 "avg_power_kw": round(float(existing.avg_power_kw), 2),
-
-#                 "avg_voltage": round(float(existing.avg_voltage), 2),
-
-#                 "avg_current": round(float(existing.avg_current), 2),
-
-#                 "house_count": existing.house_count,
-
-#                 "total_power_capacity": float(existing.total_power_capacity),
-
-#                 "utilization_percent": round(
-#                     float(existing.utilization_percent), 2
-#                 ),
-
-#                 "calculated_time": existing.calculated_time.strftime(
-#                     "%d-%m-%Y %H:%M:%S"
-#                 )
-
-#             }
-
-#             r.publish(
-#                 "grid_updates",
-#                 json.dumps(data)
-#             )
-
-#             print(f"Published Grid Update -> {zone_id}")
-
-#     except Exception as e:
-
-#         db.rollback()
-
-#         print("Zone Analytics Error:", e)
-
-#     finally:
-
-#         db.close()
-
-#     print("ZONE ANALYTICS COMPLETED")
-
-
-from sqlalchemy import func, and_
-from datetime import datetime, timezone
 
 @celery.task
 def calculate_zone_averages():
@@ -398,6 +211,8 @@ def calculate_zone_averages():
 # ==========================================
 # ZONE ALERTS
 # ==========================================
+
+
 @celery.task
 def check_zone_alerts():
 
@@ -411,63 +226,298 @@ def check_zone_alerts():
 
         for zone in zones:
 
-            if zone.utilization_percent >= 90:
+            if zone.utilization_percent < 90:
+                continue
 
-                # Save alert
-                db.add(
-                    AlertTable(
-                        zone_id=zone.zone_id,
-                        avg_current=zone.avg_current,
-                        utilization_percent=zone.utilization_percent,
-                        alert_message="Current Utilization Above 90%",
-                        alert_time=datetime.now(timezone.utc)
+            current_utilization = round(
+                float(zone.utilization_percent), 2
+            )
+
+            current_message = "Current Utilization Above 90%"
+
+            # -----------------------------------------
+            # Check Duplicate Alert (Last 30 Minutes)
+            # -----------------------------------------
+
+            duplicate = (
+
+                db.query(AlertTable)
+
+                .filter(
+
+                    AlertTable.zone_id == zone.zone_id,
+
+                    AlertTable.alert_message == current_message,
+
+                    AlertTable.utilization_percent == current_utilization,
+
+                    AlertTable.alert_time >= (
+                        datetime.now(timezone.utc)
+                        - timedelta(minutes=30)
                     )
+
                 )
 
-                db.commit()
+                .first()
 
-                data = {
-                    "type": "zone",
-                    "zone": zone.zone_id,
-                    "utilization": round(
-                        float(zone.utilization_percent), 2
-                    ),
-                    "message": "Current Utilization Above 90%"
-                }
+            )
 
-                try:
+            if duplicate:
 
-                    r.publish(
-                        "grid_updates",
-                        json.dumps(data)
-                    )
+                print(
+                    f"Duplicate Alert Skipped -> {zone.zone_id}"
+                )
 
-                    print(
-                        f"Zone Alert Published -> {zone.zone_id}"
-                    )
+                continue
 
-                except Exception as redis_error:
+            # -----------------------------------------
+            # Save Alert
+            # -----------------------------------------
 
-                    print(
-                        "Redis Publish Error:",
-                        redis_error
-                    )
+            new_alert = AlertTable(
 
-    except Exception as db_error:
+                zone_id=zone.zone_id,
+
+                avg_current=zone.avg_current,
+
+                utilization_percent=current_utilization,
+
+                alert_message=current_message,
+
+                alert_time=datetime.now(timezone.utc)
+
+            )
+
+            db.add(new_alert)
+
+            db.commit()
+
+            # -----------------------------------------
+            # Publish Redis
+            # -----------------------------------------
+
+            data = {
+
+                "type": "zone",
+
+                "zone": zone.zone_id,
+
+                "utilization": current_utilization,
+
+                "message": current_message
+
+            }
+
+            try:
+
+                r.publish(
+                    "grid_updates",
+                    json.dumps(data)
+                )
+
+                print(
+                    f"Alert Published -> {zone.zone_id}"
+                )
+
+            except Exception as redis_error:
+
+                print(
+                    "Redis Publish Error:",
+                    redis_error
+                )
+
+    except Exception as e:
 
         db.rollback()
 
-        print(
-            "Zone Alert Database Error:",
-            db_error
-        )
+        print("Zone Alert Error:", e)
 
     finally:
 
         db.close()
 
     print("ZONE ALERT TASK COMPLETED")
+# @celery.task
+# def calculate_zone_averages():
 
+#     print("CALCULATING ZONE ANALYTICS...")
+
+#     db = SessionLocal()
+
+#     try:
+
+#         zones = (
+#             db.query(ZoneLoadSummary.zone_id)
+#             .distinct()
+#             .all()
+#         )
+
+#         for zone in zones:
+
+#             zone_id = zone[0]
+
+#             # -------------------------------------------------
+#             # Get latest reading of every unique house
+#             # -------------------------------------------------
+
+#             latest_rows = (
+#                 db.query(ZoneLoadSummary)
+#                 .filter(
+#                     ZoneLoadSummary.zone_id == zone_id
+#                 )
+#                 .order_by(
+#                     ZoneLoadSummary.house_id,
+#                     ZoneLoadSummary.record_time.desc()
+#                 )
+#                 .distinct(ZoneLoadSummary.house_id)
+#                 .all()
+#             )
+
+#             if len(latest_rows) == 0:
+#                 continue
+
+#             # -------------------------------------------------
+#             # Calculate values
+#             # -------------------------------------------------
+
+#             house_count = len(latest_rows)
+
+#             total_power = sum(
+#                 row.avg_power_kw
+#                 for row in latest_rows
+#             )
+
+#             avg_power = (
+#                 total_power / house_count
+#                 if house_count > 0
+#                 else 0
+#             )
+
+#             avg_voltage = (
+#                 sum(
+#                     row.avg_voltage
+#                     for row in latest_rows
+#                 ) / house_count
+#                 if house_count > 0
+#                 else 0
+#             )
+
+#             avg_current = (
+#                 sum(
+#                     row.avg_current
+#                     for row in latest_rows
+#                 ) / house_count
+#                 if house_count > 0
+#                 else 0
+#             )
+
+#             # Every unique house contributes 5 kW
+
+#             total_power_capacity = house_count * 5
+
+#             utilization_percent = (
+#                 (avg_power / total_power_capacity) * 100
+#                 if total_power_capacity > 0
+#                 else 0
+#             )
+
+#             # -------------------------------------------------
+#             # Update / Insert analytics
+#             # -------------------------------------------------
+
+#             existing = (
+#                 db.query(ZoneAnalyticsSummary)
+#                 .filter(
+#                     ZoneAnalyticsSummary.zone_id == zone_id
+#                 )
+#                 .first()
+#             )
+
+#             if existing:
+
+#                 existing.avg_power_kw = avg_power
+#                 existing.avg_voltage = avg_voltage
+#                 existing.avg_current = avg_current
+#                 existing.house_count = house_count
+#                 existing.total_power_capacity = total_power_capacity
+#                 existing.utilization_percent = utilization_percent
+#                 existing.calculated_time = datetime.now(timezone.utc)
+
+#             else:
+
+#                 existing = ZoneAnalyticsSummary(
+
+#                     zone_id=zone_id,
+
+#                     avg_power_kw=avg_power,
+
+#                     avg_voltage=avg_voltage,
+
+#                     avg_current=avg_current,
+
+#                     house_count=house_count,
+
+#                     total_power_capacity=total_power_capacity,
+
+#                     utilization_percent=utilization_percent,
+
+#                     calculated_time=datetime.now(timezone.utc)
+
+#                 )
+
+#                 db.add(existing)
+
+#             db.commit()
+#             db.refresh(existing)
+
+#             # -------------------------------------------------
+#             # Publish Redis Update
+#             # -------------------------------------------------
+
+#             data = {
+
+#                 "type": "grid_update",
+
+#                 "zone_id": existing.zone_id,
+
+#                 "avg_power_kw": round(float(existing.avg_power_kw), 2),
+
+#                 "avg_voltage": round(float(existing.avg_voltage), 2),
+
+#                 "avg_current": round(float(existing.avg_current), 2),
+
+#                 "house_count": existing.house_count,
+
+#                 "total_power_capacity": float(existing.total_power_capacity),
+
+#                 "utilization_percent": round(
+#                     float(existing.utilization_percent), 2
+#                 ),
+
+#                 "calculated_time": existing.calculated_time.strftime(
+#                     "%d-%m-%Y %H:%M:%S"
+#                 )
+
+#             }
+
+#             r.publish(
+#                 "grid_updates",
+#                 json.dumps(data)
+#             )
+
+#             print(f"Published Grid Update -> {zone_id}")
+
+#     except Exception as e:
+
+#         db.rollback()
+
+#         print("Zone Analytics Error:", e)
+
+#     finally:
+
+#         db.close()
+
+#     print("ZONE ANALYTICS COMPLETED")
 
 
 # @celery.task

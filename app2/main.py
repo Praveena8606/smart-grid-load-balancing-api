@@ -14,15 +14,44 @@ from app.routers import (
     dashboard
 )
 
-app = FastAPI(
-    title="Grid Analytics Platform",
-    version="1.0.0"
-)
+from contextlib import asynccontextmanager
+from fastapi import FastAPI
 
-@app.on_event("startup")
-async def startup():
+from app.database import sync_engine
+from app.database import Base
+
+# Import ALL models so SQLAlchemy knows about them
+from app.models import ZoneLoadSummary,ZoneAnalyticsSummary,AlertTable
+# Import every model you have
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    print("Creating database tables...")
+    print(Base.metadata.tables.keys())
+
+    Base.metadata.create_all(bind=sync_engine)
+
+    print("Database ready.")
 
     asyncio.create_task(redis_listener())
+
+    print("redis listen")
+
+    yield
+
+    print("Application stopped.")
+
+
+
+
+
+app = FastAPI(
+    title="Grid Analytics Platform",
+    version="1.0.0",
+    lifespan=lifespan
+)
+
 
 # Static Files
 app.mount(
@@ -72,4 +101,5 @@ async def health():
     return {
         "status": "running"
     }
+
 

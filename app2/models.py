@@ -1,7 +1,7 @@
 from sqlalchemy.orm import declarative_base
 from sqlalchemy import Column, Integer, String, Float, DateTime
-
-Base = declarative_base()    
+from app.database import Base
+from sqlalchemy import Boolean
 
 class ZoneLoadSummary(Base):
 
@@ -60,6 +60,7 @@ class AlertTable(Base):
 
     alert_time = Column(DateTime(timezone=True))
 
+    active = Column(Boolean, default=True)
 
 
 class ForecastAlertTable(Base):

@@ -6,20 +6,22 @@
     <meta charset="UTF-8">
     <title>Grid Operator Dashboard</title>
 
-    <link rel="stylesheet" href="/static/css/dashboard.css">
+    <!-- <link rel="stylesheet" href="/static/css/dashboard.css"> -->
 
     <style>
 
 body{
-    margin:0;
+    margin: 40px;
     padding:20px;
     background:#f4f6fb;
     font-family:Arial, Helvetica, sans-serif;
+
 }
 
 .container{
     max-width:1500px;
     margin:auto;
+    text-align: center;
 }
 
 /* --------------------------
@@ -45,51 +47,155 @@ body{
    Notification
 -------------------------- */
 
+/* ===========================
+   Notification
+=========================== */
+
 .notification{
     position:relative;
+    display:inline-block;
 }
 
 #bellBtn{
-    background:none;
+    background:#ffffff;
     border:none;
-    font-size:28px;
+    width:52px;
+    height:52px;
+    border-radius:50%;
     cursor:pointer;
+    font-size:28px;
+    box-shadow:0 4px 10px rgba(0,0,0,.15);
+    transition:.3s;
+}
+
+#bellBtn:hover{
+    background:#1976d2;
+    color:#fff;
+    transform:scale(1.08);
 }
 
 #badge{
     position:absolute;
     top:-6px;
     right:-6px;
-    width:22px;
-    height:22px;
-    background:red;
-    color:white;
+    width:24px;
+    height:24px;
     border-radius:50%;
+    background:#f44336;
+    color:white;
     display:flex;
     justify-content:center;
     align-items:center;
     font-size:12px;
     font-weight:bold;
+    border:2px solid white;
 }
 
+/* Dropdown */
+
 .notification-list{
+
     display:none;
+
     position:absolute;
-    top:45px;
+
+    top:65px;        /* show below bell */
+
     right:0;
-    width:320px;
-    max-height:400px;
+
+    width:340px;
+
+    max-height:420px;
+
     overflow-y:auto;
-    background:white;
-    border-radius:10px;
-    box-shadow:0 4px 12px rgba(0,0,0,.25);
-    z-index:1000;
+
+    background:#fff;
+
+    border-radius:12px;
+
+    box-shadow:0 8px 25px rgba(0,0,0,.25);
+
+    z-index:9999;
+
+    animation:fadeDown .25s ease;
+}
+
+/* Small Arrow */
+
+.notification-list::before{
+
+    content:"";
+
+    position:absolute;
+
+    top:-10px;
+
+    right:20px;
+
+    border-left:10px solid transparent;
+
+    border-right:10px solid transparent;
+
+    border-bottom:10px solid white;
+
 }
 
 .notification-item{
-    padding:15px;
-    border-bottom:1px solid #ddd;
-    font-size:15px;
+
+    padding:18px;
+
+    border-bottom:1px solid #eeeeee;
+
+    transition:.25s;
+
+    line-height:1.5;
+
+}
+
+.notification-item:last-child{
+
+    border-bottom:none;
+
+}
+
+.notification-item:hover{
+
+    background:#f5f9ff;
+
+}
+
+.notification-item b{
+
+    color:#1565c0;
+
+    font-size:18px;
+
+}
+
+.notification-item small{
+
+    color:#777;
+
+}
+
+@keyframes fadeDown{
+
+    from{
+
+        opacity:0;
+
+        transform:translateY(-15px);
+
+    }
+
+    to{
+
+        opacity:1;
+
+        transform:translateY(0);
+
+    }
+
 }
 
 /* --------------------------
@@ -98,7 +204,7 @@ body{
 
 .section-title{
     margin:30px 0 20px;
-    color:#2c3e50;
+    color:#044888;
     font-size:28px;
 }
 
@@ -199,7 +305,7 @@ body{
 .back-btn{
     margin-top:25px;
     padding:12px 24px;
-    background:#1f4e79;
+    background:#0f4b83;
     color:white;
     border:none;
     border-radius:8px;
@@ -208,7 +314,7 @@ body{
 }
 
 .back-btn:hover{
-    background:#163a5a;
+    background:#28567e;
 }
 
 /* --------------------------
@@ -255,7 +361,7 @@ body{
 
 <div class="container">
 
-    <h1>GRID OPERATOR DASHBOARD</h1>
+    <h1 style="color: #044888;">GRID OPERATOR DASHBOARD</h1>
 
     <!-- Top Bar -->
     <div class="top-bar">
@@ -266,12 +372,11 @@ body{
 
         <div class="notification">
 
-            <button id="bellBtn">
-                🔔
-                <span id="badge">0</span>
-            </button>
+            <button id="bellBtn" title="Notifications">🔔</button>
 
-            <div id="notificationList" class="notification-list"></div>
+            <span id="badge">0</span>
+
+         <div id="notificationList" class="notification-list"></div>
 
         </div>
 
@@ -550,10 +655,10 @@ function connectSocket() {
 
             item.className = "notification-item";
 
-            item.innerHTML = `
-                <b>${data.zone}</b><br>
-                Utilization : ${data.utilization}%<br>
-                ${data.message}
+           item.innerHTML = `
+                <b>⚡ ${data.zone}</b><br>
+                <span>Utilization: <strong>${data.utilization}%</strong></span><br>
+                <small>${data.message}</small>
             `;
 
             list.prepend(item);
