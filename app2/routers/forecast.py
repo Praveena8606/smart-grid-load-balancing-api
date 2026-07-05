@@ -193,8 +193,6 @@ async def generate_forecast(
             ZoneLoadSummary.record_time.desc()
         )
 
-        .limit(600)
-
     )
 
     history = result.scalars().all()

@@ -1,80 +1,115 @@
-from fastapi import APIRouter, Depends
-from sqlalchemy.orm import Session
-from sqlalchemy import text
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 
-from app.database import SessionLocal
+from app.database import get_db
 from app.models import ZoneAnalyticsSummary
+from app.schemas import ZoneAnalyticsResponse
 
-router = APIRouter()
-
-
-# Database Dependency
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+router = APIRouter(
+    prefix="/analytics",
+    tags=["Zone Analytics"]
+)
 
 
-# Get All Analytics Records
-@router.get("/")
-def get_analytics(
-    db: Session = Depends(get_db)
+# ==========================================
+# GET ALL ANALYTICS
+# ==========================================
+
+@router.get(
+    "/",
+    response_model=list[ZoneAnalyticsResponse]
+)
+async def get_analytics(
+    db: AsyncSession = Depends(get_db)
 ):
-    return db.query(
-        ZoneAnalyticsSummary
-    ).all()
 
+    result = await db.execute(
 
-# Get Analytics for Specific Zone
-@router.get("/{zone_id}")
-def get_zone_analytics(
-    zone_id: str,
-    db: Session = Depends(get_db)
-):
-    return (
-        db.query(ZoneAnalyticsSummary)
-        .filter(
-            ZoneAnalyticsSummary.zone_id == zone_id
-        )
-        .all()
-    )
+        select(ZoneAnalyticsSummary)
 
-
-# Get Latest Analytics Record for Zone
-@router.get("/{zone_id}/latest")
-def get_latest_zone_analytics(
-    zone_id: str,
-    db: Session = Depends(get_db)
-):
-    return (
-        db.query(ZoneAnalyticsSummary)
-        .filter(
-            ZoneAnalyticsSummary.zone_id == zone_id
-        )
         .order_by(
-            ZoneAnalyticsSummary.id.desc()
+            ZoneAnalyticsSummary.calculated_time.desc()
         )
-        .first()
+
     )
 
+    return result.scalars().all()
 
-# Optional Raw SQL Endpoint
-@router.get("/summary/all")
-def analytics_summary():
 
-    db = SessionLocal()
+# ==========================================
+# GET ANALYTICS BY ZONE
+# ==========================================
 
-    try:
-        result = db.execute(
-            text("""
-                SELECT *
-                FROM zone_analytics_summary
-            """)
+@router.get(
+    "/{zone_id}",
+    response_model=list[ZoneAnalyticsResponse]
+)
+async def get_zone_analytics(
+    zone_id: str,
+    db: AsyncSession = Depends(get_db)
+):
+
+    result = await db.execute(
+
+        select(ZoneAnalyticsSummary)
+
+        .where(
+            ZoneAnalyticsSummary.zone_id == zone_id
         )
 
-        return result.mappings().all()
+        .order_by(
+            ZoneAnalyticsSummary.calculated_time.desc()
+        )
 
-    finally:
-        db.close()
+    )
+
+    rows = result.scalars().all()
+
+    if not rows:
+
+        raise HTTPException(
+            status_code=404,
+            detail="Zone Analytics Not Found"
+        )
+
+    return rows
+
+
+# ==========================================
+# GET LATEST ANALYTICS OF ZONE
+# ==========================================
+
+@router.get(
+    "/{zone_id}/latest",
+    response_model=ZoneAnalyticsResponse
+)
+async def get_latest_zone_analytics(
+    zone_id: str,
+    db: AsyncSession = Depends(get_db)
+):
+
+    result = await db.execute(
+
+        select(ZoneAnalyticsSummary)
+
+        .where(
+            ZoneAnalyticsSummary.zone_id == zone_id
+        )
+
+        .order_by(
+            ZoneAnalyticsSummary.calculated_time.desc()
+        )
+
+    )
+
+    row = result.scalars().first()
+
+    if row is None:
+
+        raise HTTPException(
+            status_code=404,
+            detail="Zone Analytics Not Found"
+        )
+
+    return row
