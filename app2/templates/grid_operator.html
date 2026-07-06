@@ -507,22 +507,23 @@ const badge = document.getElementById("badge");
 const list = document.getElementById("notificationList");
 const toastContainer = document.getElementById("toastContainer");
 
-// ======================================
-// Notification Bell
-// ======================================
+// ------------------------------
+// Bell Button
+// ------------------------------
 
-document.getElementById("bellBtn").onclick = function () {
+document.getElementById("bellBtn").addEventListener("click", () => {
 
-    list.style.display =
-        list.style.display === "block"
-            ? "none"
-            : "block";
+    if (list.style.display === "block") {
+        list.style.display = "none";
+    } else {
+        list.style.display = "block";
+    }
 
-};
+});
 
-// ======================================
-// WebSocket Connection
-// ======================================
+// ------------------------------
+// WebSocket
+// ------------------------------
 
 function connectSocket() {
 
@@ -530,36 +531,26 @@ function connectSocket() {
 
     const status = document.getElementById("connectionStatus");
 
-    // -----------------------------------
-    // Connected
-    // -----------------------------------
+    socket.onopen = () => {
 
-    socket.onopen = function () {
-
-        console.log("GRID Connected");
+        console.log("Connected");
 
         status.innerHTML = "Connected";
         status.style.background = "green";
 
     };
 
-    // -----------------------------------
-    // Receive Messages
-    // -----------------------------------
-
-    socket.onmessage = function (event) {
+    socket.onmessage = (event) => {
 
         const data = JSON.parse(event.data);
 
-        console.log(data);
+        console.log("WS DATA :", data);
 
-        // =====================================
+        // ==========================
         // GRID UPDATE
-        // =====================================
+        // ==========================
 
         if (data.type === "grid_update") {
-
-            // Update Analytics Table
 
             const row = document.getElementById(data.zone_id);
 
@@ -573,8 +564,6 @@ function connectSocket() {
                 row.cells[6].innerHTML = Number(data.utilization_percent).toFixed(2) + "%";
                 row.cells[7].innerHTML = data.calculated_time;
 
-                // Highlight row based on utilization
-
                 if (data.utilization_percent >= 90) {
 
                     row.classList.add("zone-alert");
@@ -586,8 +575,6 @@ function connectSocket() {
                 }
 
             }
-
-            // Update Zone Card
 
             const card = document.getElementById("card-" + data.zone_id);
 
@@ -618,18 +605,21 @@ function connectSocket() {
 
         }
 
-        // =====================================
-        // ZONE ALERT
-        // =====================================
+        // ==========================
+        // ALERT
+        // ==========================
 
         if (data.type === "zone") {
 
-            // Update Notification Badge
+            console.log("ZONE ALERT RECEIVED");
+
+            // Badge
 
             alertCount++;
+
             badge.innerHTML = alertCount;
 
-            // Toast Notification
+            // Toast
 
             const toast = document.createElement("div");
 
@@ -647,23 +637,24 @@ function connectSocket() {
 
                 toast.remove();
 
-            }, 4000);
+            },4000);
 
-            // Notification History
+            // Bell Notification
 
             const item = document.createElement("div");
 
             item.className = "notification-item";
 
-           item.innerHTML = `
-                <b>⚡ ${data.zone}</b><br>
-                <span>Utilization: <strong>${data.utilization}%</strong></span><br>
+            item.innerHTML = `
+                <b>⚠ ${data.zone}</b><br>
+                Utilization :
+                <strong>${data.utilization}%</strong><br>
                 <small>${data.message}</small>
             `;
 
             list.prepend(item);
 
-            // Highlight Table Row
+            // Highlight Table
 
             const row = document.getElementById(data.zone);
 
@@ -673,7 +664,7 @@ function connectSocket() {
 
             }
 
-            // Highlight Zone Card
+            // Highlight Card
 
             const card = document.getElementById("card-" + data.zone);
 
@@ -683,46 +674,28 @@ function connectSocket() {
 
             }
 
-            return;
-
         }
 
     };
 
-    // -----------------------------------
-    // Error
-    // -----------------------------------
+    socket.onerror = (e)=>{
 
-    socket.onerror = function (error) {
-
-        console.log("WebSocket Error");
-
-        console.error(error);
+        console.log(e);
 
     };
 
-    // -----------------------------------
-    // Disconnected
-    // -----------------------------------
+    socket.onclose = ()=>{
 
-    socket.onclose = function () {
+        console.log("Disconnected");
 
-        console.log("GRID Disconnected");
+        status.innerHTML="Disconnected";
+        status.style.background="red";
 
-        status.innerHTML = "Disconnected";
-        status.style.background = "red";
-
-        // Auto Reconnect
-
-        setTimeout(connectSocket, 3000);
+        setTimeout(connectSocket,3000);
 
     };
 
 }
-
-// ======================================
-// Start WebSocket
-// ======================================
 
 connectSocket();
 

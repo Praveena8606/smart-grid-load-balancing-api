@@ -216,7 +216,7 @@ def calculate_zone_averages():
 @celery.task
 def check_zone_alerts():
 
-    print("ZONE ALERT TASK RUNNING...")
+    print("========== ZONE ALERT TASK STARTED ==========")
 
     db = SessionLocal()
 
@@ -224,9 +224,14 @@ def check_zone_alerts():
 
         zones = db.query(ZoneAnalyticsSummary).all()
 
+        print(f"Total Zones : {len(zones)}")
+
         for zone in zones:
 
-            if zone.utilization_percent < 90:
+            print(f"{zone.zone_id} -> {zone.utilization_percent}%")
+
+            # Skip if utilization below 90%
+            if float(zone.utilization_percent) < 90:
                 continue
 
             current_utilization = round(
@@ -235,108 +240,86 @@ def check_zone_alerts():
 
             current_message = "Current Utilization Above 90%"
 
-            # -----------------------------------------
-            # Check Duplicate Alert (Last 30 Minutes)
-            # -----------------------------------------
+            # ------------------------------------
+            # Duplicate Check (Last 30 Minutes)
+            # ------------------------------------
 
             duplicate = (
-
                 db.query(AlertTable)
-
                 .filter(
-
                     AlertTable.zone_id == zone.zone_id,
-
-                    AlertTable.alert_message == current_message,
-
-                    AlertTable.utilization_percent == current_utilization,
-
                     AlertTable.alert_time >= (
                         datetime.now(timezone.utc)
                         - timedelta(minutes=30)
                     )
-
                 )
-
                 .first()
-
             )
 
+            print("ZONE :", zone.zone_id)
+            print("UTIL :", current_utilization)
+            print("Duplicate :", duplicate)
+
             if duplicate:
-
-                print(
-                    f"Duplicate Alert Skipped -> {zone.zone_id}"
-                )
-
+                print("SKIPPING DUPLICATE")
                 continue
 
-            # -----------------------------------------
+            print("NO DUPLICATE FOUND")
+
+            # ------------------------------------
             # Save Alert
-            # -----------------------------------------
+            # ------------------------------------
 
             new_alert = AlertTable(
-
                 zone_id=zone.zone_id,
-
                 avg_current=zone.avg_current,
-
                 utilization_percent=current_utilization,
-
                 alert_message=current_message,
-
                 alert_time=datetime.now(timezone.utc)
-
             )
 
             db.add(new_alert)
-
             db.commit()
+            db.refresh(new_alert)
 
-            # -----------------------------------------
+            print(f"Alert Saved -> {zone.zone_id}")
+
+            # ------------------------------------
             # Publish Redis
-            # -----------------------------------------
+            # ------------------------------------
 
-            data = {
-
+            redis_message = {
                 "type": "zone",
-
                 "zone": zone.zone_id,
-
                 "utilization": current_utilization,
-
-                "message": current_message
-
+                "message": current_message,
+                "alert_time": new_alert.alert_time.strftime(
+                    "%d-%m-%Y %H:%M:%S"
+                )
             }
 
-            try:
+            print("Publishing Redis ->", redis_message)
 
-                r.publish(
-                    "grid_updates",
-                    json.dumps(data)
-                )
+            subscribers = r.publish(
+                "grid_updates",
+                json.dumps(redis_message)
+            )
 
-                print(
-                    f"Alert Published -> {zone.zone_id}"
-                )
-
-            except Exception as redis_error:
-
-                print(
-                    "Redis Publish Error:",
-                    redis_error
-                )
+            print(
+                f"Redis Published -> {zone.zone_id} | Subscribers = {subscribers}"
+            )
 
     except Exception as e:
 
         db.rollback()
-
-        print("Zone Alert Error:", e)
+        print("ZONE ALERT ERROR :", str(e))
 
     finally:
 
         db.close()
 
-    print("ZONE ALERT TASK COMPLETED")
+    print("========== ZONE ALERT TASK COMPLETED ==========")
+    
 # @celery.task
 # def calculate_zone_averages():
 

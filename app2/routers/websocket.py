@@ -8,32 +8,40 @@ from app.websocket_manager import manager
 
 router = APIRouter()
 
-
-# =====================================================
-# GRID SOCKET
-# =====================================================
+# ==========================================
+# GRID WEBSOCKET
+# ==========================================
 
 @router.websocket("/ws/grid")
 async def grid_socket(websocket: WebSocket):
 
     await manager.connect_grid(websocket)
 
-    print("GRID Connected")
+    print("GRID WebSocket Connected")
 
     try:
+
         while True:
+
+            # Keep the connection alive
             await asyncio.sleep(1)
 
     except WebSocketDisconnect:
 
         manager.disconnect_grid(websocket)
 
-        print("GRID Disconnected")
+        print("GRID WebSocket Disconnected")
+
+    except Exception as e:
+
+        manager.disconnect_grid(websocket)
+
+        print("GRID Socket Error:", e)
 
 
-# =====================================================
-# FORECAST SOCKET
-# =====================================================
+# ==========================================
+# FORECAST WEBSOCKET
+# ==========================================
 
 @router.websocket("/ws/forecast")
 async def forecast_socket(websocket: WebSocket):
@@ -43,8 +51,10 @@ async def forecast_socket(websocket: WebSocket):
     print("FORECAST WebSocket Connected")
 
     try:
+
         while True:
-            await websocket.receive_text()
+
+            await asyncio.sleep(1)
 
     except WebSocketDisconnect:
 
@@ -52,4 +62,9 @@ async def forecast_socket(websocket: WebSocket):
 
         print("FORECAST WebSocket Disconnected")
 
+    except Exception as e:
+
+        manager.disconnect_forecast(websocket)
+
+        print("FORECAST Socket Error:", e)
        

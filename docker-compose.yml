@@ -1,0 +1,88 @@
+
+services:
+
+  timescaledb:
+
+    image: timescale/timescaledb:latest-pg16
+
+    environment:
+      POSTGRES_DB: tsdb
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 12345
+
+    ports:
+      - "5434:5432"
+
+    volumes:
+      - timescale_data:/var/lib/postgresql/data
+
+  redis:
+
+    image: redis:latest
+
+    ports:
+      - "6379:6379"
+
+  fastapi:
+    build: .
+    ports:
+      - "8000:8000"
+
+    depends_on:
+      - redis
+      - timescaledb
+
+    environment:
+
+      DATABASE_URL: postgresql://postgres:12345@timescaledb:5432/tsdb
+      ASYNC_DATABASE_URL: postgresql+asyncpg://postgres:12345@timescaledb:5432/tsdb
+      REDIS_HOST: redis
+
+  worker:
+
+    build: .
+
+    command: celery -A app.celery_app worker --pool=solo --loglevel=info
+
+    depends_on:
+      - redis
+      - timescaledb
+
+    environment:
+
+      DATABASE_URL: postgresql://postgres:12345@timescaledb:5432/tsdb
+
+      REDIS_HOST: redis
+
+  beat:
+
+    build: .
+
+    command: celery -A app.celery_app beat --loglevel=info
+
+    depends_on:
+      - redis
+      - timescaledb
+
+    environment:
+
+      DATABASE_URL: postgresql://postgres:12345@timescaledb:5432/tsdb
+
+      REDIS_HOST: redis
+
+  sender:
+
+    build:
+      context: ./send_data
+      dockerfile: Dockerfile
+
+    depends_on:
+      - fastapi
+      - redis
+      - timescaledb
+
+    restart: always   
+
+volumes:
+
+  timescale_data:
